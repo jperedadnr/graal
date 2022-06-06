@@ -218,7 +218,6 @@ jobs:
     env:
       JDK: labsjdk-ce-${{ matrix.jdk }}
       LABS_HOME: ${{ github.workspace }}\jdk
-      MX_PYTHON: python3.9
       MX_PATH: ${{ github.workspace }}\mx
       GRAALVM_SVM: graalvm-svm-java${{ matrix.jdk }}-windows-${{ needs.determine-version.outputs.version }}
     steps:
