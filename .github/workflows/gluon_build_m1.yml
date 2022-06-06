@@ -73,6 +73,8 @@ jobs:
         LINKY_LAYOUT: "*.jar"
       working-directory: ./vm
       run: |
+        unset JAVA_HOME
+        export JAVA_HOME=${{ env.LABS_HOME }}/Contents/Home
         echo ${JAVA_HOME}
         ${JAVA_HOME}/bin/java -version
         echo >> GRAALVM-README.md && echo "TODO: use actual content" >> GRAALVM-README.md
