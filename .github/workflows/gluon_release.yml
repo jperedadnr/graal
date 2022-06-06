@@ -304,4 +304,4 @@ jobs:
           This is a Gluon build of GraalVM.
           Based on Gluon Graal commit: ${{ github.sha }}
         token: ${{ secrets.GITHUB_TOKEN }}
-        artifacts: "artifacts/graalvm-zip-linux/*.zip,artifacts/graalvm-zip-darwin/*.zip,artifacts/graalvm-zip-windows/*.zip"
+        artifacts: "artifacts/graalvm-zip-linux/*.tar.gz,artifacts/graalvm-zip-darwin/*.tar.gz,artifacts/graalvm-zip-windows/*.zip"
