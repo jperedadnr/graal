@@ -57,6 +57,7 @@ jobs:
     - uses: actions/setup-java@v2
       with:
         distribution: 'temurin'
+        architecture: 'aarch64'
         java-version: ${{ matrix.jdk }}
     - name: Get JDK
       run: |
@@ -74,6 +75,7 @@ jobs:
       run: |
         echo ${JAVA_HOME}
         ${JAVA_HOME}/bin/java -version
+        echo >> GRAALVM-README.md && echo "TODO: use actual content" >> GRAALVM-README.md
         ${MX_PATH}/mx --dy /substratevm build
         GRAALVM_HOME=`${MX_PATH}/mx --dy /substratevm graalvm-home`
         echo "::set-output name=graalvm-home-dir::$GRAALVM_HOME"
@@ -87,6 +89,6 @@ jobs:
     - name: Archive distribution
       uses: actions/upload-artifact@v2
       with:
-        name: graalvm-zip-darwin
+        name: graalvm-zip-darwin-m1
         path: |
           vm/${{ env.GRAALVM_SVM }}.tar.gz
