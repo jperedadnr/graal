@@ -75,6 +75,10 @@ jobs:
       run: |
         unset JAVA_HOME
         export JAVA_HOME=${{ env.LABS_HOME }}/Contents/Home
+        export DISABLE_LIBPOLYGLOT=true
+        export DISABLE_POLYGLOT=true
+        export FORCE_BASH_LAUNCHERS=false
+        export LINKY_LAYOUT="*.jar"
         echo ${JAVA_HOME}
         ${JAVA_HOME}/bin/java -version
         echo >> GRAALVM-README.md && echo "TODO: use actual content" >> GRAALVM-README.md
