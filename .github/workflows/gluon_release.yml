@@ -67,6 +67,7 @@ jobs:
     env:
       JDK: labsjdk-ce-${{ matrix.jdk }}
       LABS_HOME: ${{ github.workspace }}/jdk
+      MX_PYTHON: python3.9
       MX_PATH: ${{ github.workspace }}/mx
       GRAALVM_SVM: graalvm-svm-java${{ matrix.jdk }}-linux-${{ needs.determine-version.outputs.version }}
     steps:
@@ -79,6 +80,10 @@ jobs:
         fetch-depth: 1
         ref: master
         path: ${{ env.MX_PATH }}
+    - name: Setup python
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.9'
     - uses: actions/cache@v1
       with:
         path: ~/.mx
@@ -144,6 +149,7 @@ jobs:
     env:
       JDK: labsjdk-ce-${{ matrix.jdk }}
       LABS_HOME: ${{ github.workspace }}/jdk
+      MX_PYTHON: python3.9
       MX_PATH: ${{ github.workspace }}/mx
       GRAALVM_SVM: graalvm-svm-java${{ matrix.jdk }}-darwin-${{ needs.determine-version.outputs.version }}
     steps:
@@ -156,6 +162,10 @@ jobs:
         fetch-depth: 1
         ref: master
         path: ${{ env.MX_PATH }}
+    - name: Setup python
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.9'
     - uses: actions/cache@v1
       with:
         path: ~/.mx
@@ -208,6 +218,7 @@ jobs:
     env:
       JDK: labsjdk-ce-${{ matrix.jdk }}
       LABS_HOME: ${{ github.workspace }}\jdk
+      MX_PYTHON: python3.9
       MX_PATH: ${{ github.workspace }}\mx
       GRAALVM_SVM: graalvm-svm-java${{ matrix.jdk }}-windows-${{ needs.determine-version.outputs.version }}
     steps:
@@ -220,6 +231,10 @@ jobs:
         fetch-depth: 1
         ref: master
         path: ${{ env.MX_PATH }}
+    - name: Setup python
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.9'
     - uses: actions/cache@v1
       with:
         path: ~/.mx
