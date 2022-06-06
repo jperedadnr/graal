@@ -10,7 +10,6 @@ on:
 
 env:
   LANG: en_US.UTF-8
-  JVMCI_VERSION: jvmci-22.1-b06
 
 jobs:
   determine-version:
@@ -39,7 +38,7 @@ jobs:
       LABS_HOME: ${{ github.workspace }}/jdk
       MX_PYTHON: python3.9
       MX_PATH: ${{ github.workspace }}/mx
-      GRAALVM_SVM: graalvm-svm-java${{ matrix.jdk }}-darwin-${{ needs.determine-version.outputs.version }}
+      GRAALVM_SVM: graalvm-svm-java${{ matrix.jdk }}-darwin-m1-${{ needs.determine-version.outputs.version }}
     steps:
     - uses: actions/checkout@v2
       with:
@@ -50,10 +49,6 @@ jobs:
         fetch-depth: 1
         ref: master
         path: ${{ env.MX_PATH }}
-    - name: Setup python
-      uses: actions/setup-python@v3
-      with:
-        python-version: '3.9'
     - uses: actions/cache@v1
       with:
         path: ~/.mx
