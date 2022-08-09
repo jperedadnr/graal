@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,24 +22,33 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package org.graalvm.compiler.hotspot.amd64;
+package com.oracle.svm.core.jvmstat;
 
-import org.graalvm.compiler.api.replacements.Snippet;
-import org.graalvm.compiler.hotspot.HotSpotForeignCallLinkage;
-import org.graalvm.compiler.hotspot.meta.HotSpotProviders;
-import org.graalvm.compiler.hotspot.stubs.SnippetStub;
-import org.graalvm.compiler.options.OptionValues;
-import org.graalvm.compiler.replacements.nodes.VectorizedMismatchNode;
-import org.graalvm.word.Pointer;
+import com.oracle.svm.core.annotate.Uninterruptible;
+import org.graalvm.nativeimage.Platform;
+import org.graalvm.nativeimage.Platforms;
 
-public final class AMD64VectorizedMismatchStub extends SnippetStub {
-
-    public AMD64VectorizedMismatchStub(OptionValues options, HotSpotProviders providers, HotSpotForeignCallLinkage linkage) {
-        super(linkage.getDescriptor().getName(), options, providers, linkage);
+public abstract class PerfLongVariant extends PerfLong implements MutablePerfDataEntry {
+    @Platforms(Platform.HOSTED_ONLY.class)
+    PerfLongVariant(String name, PerfUnit unit) {
+        super(name, unit);
     }
 
-    @Snippet
-    private static int vectorizedMismatch(Pointer arrayA, Pointer arrayB, int length, int stride) {
-        return VectorizedMismatchNode.vectorizedMismatch(arrayA, arrayB, length, stride);
+    @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
+    public void setValue(long val) {
+        this.value = val;
+    }
+
+    public void inc() {
+        add(1);
+    }
+
+    public void add(long increment) {
+        setValue(value + increment);
+    }
+
+    @Override
+    public void publish() {
+        valuePtr.writeLong(0, value);
     }
 }
