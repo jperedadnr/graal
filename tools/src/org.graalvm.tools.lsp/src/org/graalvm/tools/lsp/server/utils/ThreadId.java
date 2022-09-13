@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,29 +22,19 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package org.graalvm.component.installer;
+package org.graalvm.tools.lsp.server.utils;
 
 /**
- *
- * @author sdedic
+ * JDK 19 deprecates Thread.getId().
  */
-public class UnknownVersionException extends InstallerStopException {
-    private static final long serialVersionUID = 33;
+public final class ThreadId {
 
-    private final transient Version version;
-    private final transient Version candidate;
-
-    public UnknownVersionException(String s, Version v, Version c) {
-        super(s);
-        this.version = v;
-        this.candidate = c;
+    private ThreadId() {
+        assert false;
     }
 
-    public Version getCandidate() {
-        return candidate;
-    }
-
-    public Version getVersion() {
-        return version;
+    @SuppressWarnings("deprecation")
+    public static long getCurrent() {
+        return Thread.currentThread().getId();
     }
 }
