@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,30 +38,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.truffle.regex.tregex.parser.flavors;
+package org.graalvm.launcher;
 
-import com.oracle.truffle.regex.tregex.string.Encodings;
+import org.graalvm.nativeimage.hosted.Feature;
 
-/**
- * The enumeration of different flavors of Python regular expressions.
- * <p>
- * In Python, the standard regular expression engine behaves differently based on whether the
- * pattern is a 'str' (string) or a 'bytes' (immutable byte buffer) object. Since all regexes are
- * represented as {@link String}s in TRegex, we cannot dispatch on the type of the pattern. Instead,
- * we dispatch on values of this enumeration.
- */
-public enum PythonREMode {
-    /**
-     * String-based patterns, where the Python regular expression was given as a 'str' object.
-     */
-    Str,
-    /**
-     * Bytes-based (binary) patterns, where the Python regular expression was given as a 'bytes'
-     * object.
-     */
-    Bytes;
+import jdk.internal.module.Modules;
 
-    public static PythonREMode fromEncoding(Encodings.Encoding encoding) {
-        return encoding == Encodings.BYTES || encoding == Encodings.LATIN_1 ? Bytes : Str;
+class JLine3FeatureModuleAccessFeature implements Feature {
+
+    @Override
+    public void afterRegistration(AfterRegistrationAccess access) {
+        System.out.println("org.graalvm.launcher.PolyglotLauncherFeature.afterRegistration");
+        if (!JLine3FeatureModuleAccessFeature.class.getModule().isNamed()) {
+            ModuleLayer.boot().findModule("org.graalvm.nativeimage.base").ifPresent(base -> {
+                Modules.addExportsToAllUnnamed(base, "com.oracle.svm.util");
+            });
+            ModuleLayer.boot().findModule("org.graalvm.nativeimage.builder").ifPresent(builder -> {
+                Modules.addExportsToAllUnnamed(builder, "com.oracle.svm.core.jdk");
+                Modules.addExportsToAllUnnamed(builder, "com.oracle.svm.core.jni");
+            });
+        }
     }
 }
