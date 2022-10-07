@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2019, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2020, Red Hat Inc. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,24 +23,22 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package com.oracle.svm.core.image;
+package com.oracle.objectfile.debugentry;
 
-import jdk.vm.ci.meta.JavaConstant;
+/**
+ * A LoaderEntry is used to record a unique id string for the class loader asscoiated with classes
+ * that can be susceptible to repeat definitions. In such cases the loader id can be used when
+ * constructing a unique linker symbol for methods and static fields of the class. That same id may
+ * need to be embedded in debug info that identifies class and method names.
+ */
+public class LoaderEntry {
+    String loaderId;
 
-public interface ImageHeapObject {
-    long getSize();
+    public LoaderEntry(String id) {
+        loaderId = id;
+    }
 
-    Object getObject();
-
-    Class<?> getObjectClass();
-
-    JavaConstant getConstant();
-
-    void setHeapPartition(ImageHeapPartition value);
-
-    void setOffsetInPartition(long value);
-
-    long getOffset();
-
-    ImageHeapPartition getPartition();
+    public String getLoaderId() {
+        return loaderId;
+    }
 }
