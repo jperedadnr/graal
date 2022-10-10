@@ -91,7 +91,9 @@ import org.graalvm.compiler.nodes.spi.LoweringProvider;
 import org.graalvm.compiler.nodes.spi.StampProvider;
 import org.graalvm.compiler.options.OptionValues;
 import org.graalvm.compiler.phases.BasePhase;
+import org.graalvm.compiler.phases.FloatingGuardPhase;
 import org.graalvm.compiler.phases.PhaseSuite;
+import org.graalvm.compiler.phases.Speculative;
 import org.graalvm.compiler.phases.common.AddressLoweringPhase;
 import org.graalvm.compiler.phases.common.CanonicalizerPhase;
 import org.graalvm.compiler.phases.common.DeoptimizationGroupingPhase;
@@ -108,6 +110,7 @@ import org.graalvm.compiler.replacements.NodeIntrinsificationProvider;
 import org.graalvm.compiler.replacements.TargetGraphBuilderPlugins;
 import org.graalvm.compiler.word.WordOperationPlugin;
 import org.graalvm.compiler.word.WordTypes;
+import org.graalvm.nativeimage.AnnotationAccess;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.Platform;
@@ -124,8 +127,8 @@ import org.graalvm.nativeimage.c.struct.RawPointerTo;
 import org.graalvm.nativeimage.c.struct.RawStructure;
 import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.Feature.OnAnalysisExitAccess;
+import org.graalvm.nativeimage.impl.AnnotationExtractor;
 import org.graalvm.nativeimage.impl.CConstantValueSupport;
-import org.graalvm.nativeimage.impl.ImageBuildtimeCodeAnnotationAccessSupport;
 import org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport;
 import org.graalvm.nativeimage.impl.SizeOfSupport;
 import org.graalvm.nativeimage.impl.clinit.ClassInitializationTracking;
@@ -250,7 +253,6 @@ import com.oracle.svm.hosted.analysis.NativeImageReachabilityAnalysisEngine;
 import com.oracle.svm.hosted.analysis.SVMAnalysisMetaAccess;
 import com.oracle.svm.hosted.analysis.SubstrateUnsupportedFeatures;
 import com.oracle.svm.hosted.annotation.AnnotationSupport;
-import com.oracle.svm.hosted.annotation.ImageBuildtimeCodeAnnotationAccessSupportSingleton;
 import com.oracle.svm.hosted.c.CAnnotationProcessorCache;
 import com.oracle.svm.hosted.c.CConstantValueSupportImpl;
 import com.oracle.svm.hosted.c.NativeLibraries;
@@ -299,9 +301,7 @@ import com.oracle.svm.hosted.snippets.SubstrateGraphBuilderPlugins;
 import com.oracle.svm.hosted.substitute.AnnotationSubstitutionProcessor;
 import com.oracle.svm.hosted.substitute.DeletedFieldsPlugin;
 import com.oracle.svm.hosted.substitute.UnsafeAutomaticSubstitutionProcessor;
-import com.oracle.svm.util.AnnotationExtracter;
 import com.oracle.svm.util.ClassUtil;
-import com.oracle.svm.util.GuardedAnnotationAccess;
 import com.oracle.svm.util.ImageBuildStatistics;
 import com.oracle.svm.util.ReflectionUtil;
 import com.oracle.svm.util.ReflectionUtil.ReflectionUtilError;
@@ -526,8 +526,7 @@ public class NativeImageGenerator {
             ImageSingletons.add(ProgressReporter.class, reporter);
             ImageSingletons.add(TimerCollection.class, timerCollection);
             ImageSingletons.add(ImageBuildStatistics.TimerCollectionPrinter.class, timerCollection);
-            ImageSingletons.add(AnnotationExtracter.class, loader.classLoaderSupport.annotationExtracter);
-            ImageSingletons.add(ImageBuildtimeCodeAnnotationAccessSupport.class, new ImageBuildtimeCodeAnnotationAccessSupportSingleton());
+            ImageSingletons.add(AnnotationExtractor.class, loader.classLoaderSupport.annotationExtractor);
             ImageSingletons.add(BuildArtifacts.class, (type, artifact) -> buildArtifacts.computeIfAbsent(type, t -> new ArrayList<>()).add(artifact));
             ImageSingletons.add(HostedOptionValues.class, new HostedOptionValues(optionProvider.getHostedValues()));
             ImageSingletons.add(RuntimeOptionValues.class, new RuntimeOptionValues(optionProvider.getRuntimeValues(), allOptionNames));
@@ -1182,7 +1181,7 @@ public class NativeImageGenerator {
         @Override
         public void notifyNoPlugin(ResolvedJavaMethod targetMethod, OptionValues options) {
             if (Options.WarnMissingIntrinsic.getValue(options)) {
-                for (Class<?> annotationType : GuardedAnnotationAccess.getAnnotationTypes(targetMethod)) {
+                for (Class<?> annotationType : AnnotationAccess.getAnnotationTypes(targetMethod)) {
                     if (ClassUtil.getUnqualifiedName(annotationType).contains("IntrinsicCandidate")) {
                         String method = String.format("%s.%s%s", targetMethod.getDeclaringClass().toJavaName().replace('.', '/'), targetMethod.getName(),
                                         targetMethod.getSignature().toMethodDescriptor());
@@ -1488,15 +1487,18 @@ public class NativeImageGenerator {
             highTier.findLastPhase().add(new ImageBuildStatisticsCounterPhase(ImageBuildStatistics.CheckCountLocation.AFTER_HIGH_TIER));
         }
 
-        removeSpeculativePhases(suites);
+        if (hosted) {
+            removePhases(suites, Speculative.class);
+            removePhases(suites, FloatingGuardPhase.class);
+        }
 
         return suites;
     }
 
-    private static void removeSpeculativePhases(Suites suites) {
-        suites.getHighTier().removeSpeculativePhases();
-        suites.getMidTier().removeSpeculativePhases();
-        suites.getLowTier().removeSpeculativePhases();
+    private static void removePhases(Suites suites, Class<?> c) {
+        suites.getHighTier().removeSubTypePhases(c);
+        suites.getMidTier().removeSubTypePhases(c);
+        suites.getLowTier().removeSubTypePhases(c);
     }
 
     @SuppressWarnings("unused")
