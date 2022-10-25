@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2022, Oracle and/or its affiliates.
  *
  * All rights reserved.
  *
@@ -27,12 +27,32 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#include <stdlib.h>
-#include <stdio.h>
 
-int bar(int a, int b);
+#ifndef __PTHREAD_H__
+#define __PTHREAD_H__
 
-int foo(int a, int b) {
-    printf("fooA\n");
-    return (b - a) + bar(3, 9);
-}
+#include <stdint.h>
+
+#if !defined(_WIN32)
+#error The GraalVM pthreads header should only be used under Windows.
+#endif
+
+// a replacement pthread header file that can be used under Windows
+
+typedef struct __sulong_pthread_t * pthread_t;
+typedef struct __sulong_pthread_key_t * pthread_key_t;
+typedef struct pthread_attr_t pthread_attr_t;
+
+int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg);
+int pthread_equal(pthread_t thread1, pthread_t thread2);
+void pthread_exit(void *);
+int pthread_join(pthread_t thread, void **retval);
+pthread_t pthread_self();
+int pthread_setname_np(pthread_t thread, const char *name);
+int pthread_getname_np(pthread_t thread, char *name, size_t len);
+int pthread_key_create(pthread_key_t *key, void (*destructor)(void *));
+int pthread_key_delete(pthread_key_t key);
+void *pthread_getspecific(pthread_key_t key);
+int pthread_setspecific(pthread_key_t key, const void *value);
+
+#endif

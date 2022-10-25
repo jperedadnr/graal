@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates.
  *
  * All rights reserved.
  *
@@ -27,12 +27,10 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#include "delayedInit.h"
+#include <stdlib.h>
+#include <stdio.h>
 
-__attribute__((constructor)) static void beginA(void) {
-    CALLBACK("ctor baz");
-}
-
-EXPORT_FUNCTION void hello() {
-    CALLBACK("hello baz");
+int bar(int a, int b) {
+    printf("barC\n");
+    return a - b - 42;
 }
