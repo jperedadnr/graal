@@ -27,41 +27,12 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+#include <stdatomic.h>
 
-#ifndef SULONG_THREADS_H
-#define SULONG_THREADS_H
-
-#include <stdint.h>
-
-enum {
-    sulong_thread_success = 0,
-    sulong_thread_error = 1,
+struct Container {
+    void *_Atomic content;
 };
 
-/*
- * On different platforms, pthread_t and pthread_key_t might be different types
- * (e.g. on Linux they are long/int, on Darwin they are pointer/long). We do an
- * indirection here to abstract away the difference. On GraalVM, both are just
- * implemented as IDs.
- */
-
-typedef uint64_t __sulong_thread_t;
-typedef int __sulong_key_t;
-
-typedef void *(*__sulong_thread_start_t)(void *);
-
-int __sulong_thread_create(__sulong_thread_t *thread, __sulong_thread_start_t fn, void *arg);
-void *__sulong_thread_join(__sulong_thread_t thread);
-__sulong_thread_t __sulong_thread_self();
-int __sulong_thread_setname_np(__sulong_thread_t thread, const char *name);
-int __sulong_thread_getname_np(__sulong_thread_t thread, char *name, uint64_t len);
-
-void __sulong_thread_yield();
-int __sulong_thread_sleep(int64_t millis, int32_t nanos);
-
-__sulong_key_t __sulong_thread_key_create(void (*destructor)(void *));
-void __sulong_thread_key_delete(__sulong_key_t key);
-void *__sulong_thread_getspecific(__sulong_key_t key);
-void __sulong_thread_setspecific(__sulong_key_t key, const void *value);
-
-#endif // SULONG_THREADS_H
+int cmpxchg_test(struct Container *memory, void *expected, void *value) {
+    return atomic_compare_exchange_strong(&memory->content, &expected, value);
+}
