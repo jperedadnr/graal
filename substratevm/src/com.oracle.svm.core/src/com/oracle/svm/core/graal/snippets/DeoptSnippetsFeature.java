@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,31 +22,31 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package org.graalvm.compiler.truffle.compiler.hotspot;
+package com.oracle.svm.core.graal.snippets;
 
-import org.graalvm.compiler.hotspot.CommunityCompilerConfigurationFactory;
-import org.graalvm.compiler.hotspot.CompilerConfigurationFactory;
-import org.graalvm.compiler.phases.tiers.CompilerConfiguration;
-import org.graalvm.compiler.serviceprovider.ServiceProvider;
+import java.util.Map;
 
-/**
- * Factory for creating the default configuration for the community edition of Graal.
- */
-@ServiceProvider(CompilerConfigurationFactory.class)
-public class TruffleCommunityCompilerConfigurationFactory extends CommunityCompilerConfigurationFactory {
+import org.graalvm.compiler.graph.Node;
+import org.graalvm.compiler.options.OptionValues;
+import org.graalvm.compiler.phases.util.Providers;
+import org.graalvm.nativeimage.Platforms;
+import org.graalvm.nativeimage.impl.InternalPlatform;
 
-    private static final int AUTO_SELECTION_PRIORITY = 4;
+import com.oracle.svm.core.feature.AutomaticallyRegisteredFeature;
+import com.oracle.svm.core.feature.InternalFeature;
+import com.oracle.svm.core.graal.meta.RuntimeConfiguration;
 
-    private static final String INFO = "Graal Community compiler with Truffle extensions";
-
-    public TruffleCommunityCompilerConfigurationFactory() {
-        super(AUTO_SELECTION_PRIORITY, INFO);
-        assert AUTO_SELECTION_PRIORITY > CommunityCompilerConfigurationFactory.AUTO_SELECTION_PRIORITY;
-    }
+@AutomaticallyRegisteredFeature
+@Platforms(InternalPlatform.NATIVE_ONLY.class)
+final class DeoptSnippetsFeature implements InternalFeature {
 
     @Override
-    public CompilerConfiguration createCompilerConfiguration() {
-        return new TruffleCommunityCompilerConfiguration();
+    public void registerLowerings(RuntimeConfiguration runtimeConfig, OptionValues options, Providers providers,
+                    Map<Class<? extends Node>, NodeLoweringProvider<?>> lowerings, boolean hosted) {
+        if (hosted) {
+            DeoptHostedSnippets.registerLowerings(options, providers, lowerings);
+        } else {
+            DeoptRuntimeSnippets.registerLowerings(options, providers, lowerings);
+        }
     }
-
 }
