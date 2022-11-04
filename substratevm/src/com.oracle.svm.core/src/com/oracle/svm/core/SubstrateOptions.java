@@ -439,7 +439,7 @@ public class SubstrateOptions {
 
     @Option(help = "Print build output statistics as JSON to the specified file. " +
                     "The output is according to the JSON schema located at: " +
-                    "docs/reference-manual/native-image/assets/build-output-schema-v0.9.0.json", type = OptionType.User)//
+                    "docs/reference-manual/native-image/assets/build-output-schema-v0.9.1.json", type = OptionType.User)//
     public static final HostedOptionKey<String> BuildOutputJSONFile = new HostedOptionKey<>("");
 
     /*
@@ -562,6 +562,11 @@ public class SubstrateOptions {
     @Fold
     public static boolean useLLVMBackend() {
         return "llvm".equals(CompilerBackend.getValue());
+    }
+
+    @Fold
+    public static boolean useLIRBackend() {
+        return "lir".equals(CompilerBackend.getValue());
     }
 
     /*
