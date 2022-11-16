@@ -39,15 +39,10 @@
  * SOFTWARE.
  */
 
-package org.graalvm.wasm;
+package org.graalvm.wasm.constants;
 
-/**
- * Result value for functions with multiple result values. The actual values are passed on the
- * multi-value stack of the context.
- */
-public final class WasmMultiValueResult {
-    public static final WasmMultiValueResult INSTANCE = new WasmMultiValueResult();
-
-    private WasmMultiValueResult() {
-    }
+public class SegmentMode {
+    public static final byte ACTIVE = 0;
+    public static final byte PASSIVE = 1;
+    public static final byte DECLARATIVE = 2;
 }

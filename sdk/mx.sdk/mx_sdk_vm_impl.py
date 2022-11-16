@@ -353,6 +353,7 @@ class BaseGraalVmLayoutDistribution(_with_metaclass(ABCMeta, mx.LayoutDistributi
                  base_dir=None,
                  path=None,
                  stage1=False,
+                 include_native_image_resources_filelists=False,
                  **kw_args): # pylint: disable=super-init-not-called
         self.components = components or registered_graalvm_components(stage1)
         self.stage1 = stage1
@@ -552,6 +553,11 @@ class BaseGraalVmLayoutDistribution(_with_metaclass(ABCMeta, mx.LayoutDistributi
         assert _libpolyglot_component is None or len(_libpolyglot_component.library_configs) == 1
         _libpolyglot_macro_dir = (_macros_dir + '/' + GraalVmNativeProperties.macro_name(_libpolyglot_component.library_configs[0]) + '/') if _macros_dir is not None and _libpolyglot_component is not None else None
 
+        graalvm_dists = set()  # the jar distributions mentioned by launchers and libraries
+        component_dists = set()  # the jar distributions directly mentioned by components
+
+        _lang_homes_with_ni_resources = []
+
         for _component in sorted(self.components, key=lambda c: c.name):
             mx.logv('Adding {} ({}) to the {} {}'.format(_component.name, _component.__class__.__name__, name, self.__class__.__name__))
             _component_type_base = _get_component_type_base(_component)
@@ -581,6 +587,16 @@ class BaseGraalVmLayoutDistribution(_with_metaclass(ABCMeta, mx.LayoutDistributi
                 'exclude': _component.license_files if _no_licenses() else [],
                 'path': None,
             } for d in _component.support_distributions], _component)
+            if include_native_image_resources_filelists and isinstance(_component, mx_sdk.GraalVmLanguage) and _component.support_distributions:
+                # A support distribution of a GraalVmLanguage component might have the `fileListPurpose` attribute with value 'native-image-resources' specifying that all the files from the distribution should
+                # be used as native image resources. Any value of the attribute other than 'native-image-resources' or None for a support distribution of a GraalVmLanguage is invalid. If the attribute is specified,
+                # there is a '<distribution archive file path>.filename' file containing a file list of all the files from the distribution. The support distributions specifying the attribute together specify
+                # a subset of files from this component's home directory. The file lists will be merged by the NativeImageResourcesFileList project into a single file `native-image-resources.filelist` that will be
+                # written into this component's home directory. As a part of a native image build that includes this component, the files in the merged file list will be copied as resources to a directory named
+                # `resources` next to the produced image. This impacts only the native images built by GraalVM that are not a part of the GraalVM itself.
+                if not _component_base in _lang_homes_with_ni_resources:
+                    _add(layout, _component_base, 'dependency:{}/native-image-resources.filelist'.format(NativeImageResourcesFileList.project_name(_component.dir_name)), _component)
+                    _lang_homes_with_ni_resources.append(_component_base)
             _add(layout, '<jdk_base>/include/', [{
                 'source_type': 'extracted-dependency',
                 'dependency': d,
@@ -624,7 +640,6 @@ class BaseGraalVmLayoutDistribution(_with_metaclass(ABCMeta, mx.LayoutDistributi
                         _add_link('<jdk_base>/', _component_base + _license, _component)
 
             _jre_bin_names = []
-            graalvm_dists = set()
 
             for _launcher_config in sorted(_get_launcher_configs(_component), key=lambda c: c.destination):
                 graalvm_dists.update(_launcher_config.jar_distributions)
@@ -667,7 +682,7 @@ class BaseGraalVmLayoutDistribution(_with_metaclass(ABCMeta, mx.LayoutDistributi
                     _library_project_name = GraalVmNativeImage.project_name(_library_config)
                     # add `LibraryConfig.destination` and the generated header files to the layout
                     _add(layout, _svm_library_dest, _source_type + ':' + _library_project_name, _component)
-                    if not isinstance(_library_config, mx_sdk.LanguageLibraryConfig):
+                    if _library_config.headers:
                         _add(layout, _svm_library_home, _source_type + ':' + _library_project_name + '/*.h', _component)
                 if not stage1 and isinstance(_library_config, mx_sdk.LanguageLibraryConfig) and _library_config.launchers:
                     _add(layout, _component_base, 'dependency:{}/polyglot.config'.format(PolyglotConfig.project_name(_library_config)), _component)
@@ -683,11 +698,10 @@ class BaseGraalVmLayoutDistribution(_with_metaclass(ABCMeta, mx.LayoutDistributi
                 _add(layout, _libpolyglot_macro_dir, 'dependency:' + _libpolyglot_macro_dist_name(_component))
 
             if not _jlink_libraries():
-                graalvm_dists.difference_update(_component.boot_jars)
-            graalvm_dists.difference_update(_component.jar_distributions)
-            graalvm_dists.difference_update(_component.jvmci_parent_jars)
-            graalvm_dists.difference_update(_component.builder_jar_distributions)
-            _add(layout, '<jre_base>/lib/graalvm/', ['dependency:' + d for d in sorted(graalvm_dists)], _component, with_sources=True)
+                component_dists.update(_component.boot_jars)
+            component_dists.update(_component.jar_distributions)
+            component_dists.update(_component.jvmci_parent_jars)
+            component_dists.update(_component.builder_jar_distributions)
 
             for _provided_executable in _component.provided_executables:
                 if isinstance(_provided_executable, tuple):
@@ -707,6 +721,9 @@ class BaseGraalVmLayoutDistribution(_with_metaclass(ABCMeta, mx.LayoutDistributi
 
             if _component.installable:
                 installable_component_lists.setdefault(_component.installable_id, []).append(_component)
+
+        graalvm_dists.difference_update(component_dists)
+        _add(layout, '<jre_base>/lib/graalvm/', ['dependency:' + d for d in sorted(graalvm_dists)], with_sources=True)
 
         installer = get_component('gu', stage1=stage1)
         if installer:
@@ -860,6 +877,7 @@ class GraalVmLayoutDistribution(BaseGraalVmLayoutDistribution, LayoutSuper):  # 
             base_dir=base_dir,
             path=None,
             stage1=stage1,
+            include_native_image_resources_filelists=not stage1,
             **kw_args)
 
     @staticmethod
@@ -1869,6 +1887,74 @@ class PolyglotConfigBuildTask(_with_metaclass(ABCMeta, mx.ProjectBuildTask)):
     def __str__(self):
         return 'Building {}'.format(self.subject.name)
 
+class NativeImageResourcesFileList(_with_metaclass(ABCMeta, GraalVmProject)):
+    def __init__(self, component, components, language_dir, deps, **kw_args):
+        super(NativeImageResourcesFileList, self).__init__(component, NativeImageResourcesFileList.project_name(language_dir), deps, **kw_args)
+        self.language_dir = language_dir
+        self.components = components
+
+    def native_image_resources_filelist_file(self):
+        return join(self.get_output_base(), self.name, "native-image-resources.filelist")
+
+    def getArchivableResults(self, use_relpath=True, single=False):
+        out = self.native_image_resources_filelist_file()
+        yield out, basename(out)
+
+    def get_containing_graalvm(self):
+        return get_final_graalvm_distribution()
+
+    def getBuildTask(self, args):
+        return NativeImageResourcesFileListBuildTask(self, args)
+
+    @staticmethod
+    def project_name(language_dir):
+        return "org.graalvm.langugage." + language_dir + ".ni_resources_filelist"
+
+
+class NativeImageResourcesFileListBuildTask(_with_metaclass(ABCMeta, mx.ProjectBuildTask)):
+    def __init__(self, project, args):
+        super(NativeImageResourcesFileListBuildTask, self).__init__(args, 1, project)
+        self._native_image_resources_filelist_contents = None
+
+    def needsBuild(self, newestInput):
+        reason = _file_needs_build(newestInput, self.subject.native_image_resources_filelist_file(), self.native_image_resources_filelist_contents)
+        if reason:
+            return True, reason
+        return False, None
+
+    def native_image_resources_filelist_contents(self):
+        if self._native_image_resources_filelist_contents is None:
+            contents = []
+            for c in self.subject.components:
+                for dep in c.support_distributions:
+                    d = mx.dependency(dep)
+                    if d.fileListPurpose:
+                        if d.fileListPurpose != 'native-image-resources':
+                            mx.abort("Since distribution {} is a GraalVmLanguage support distribution, the only allowed value of its fileListPurpose attribute is 'native-image-resources', but was {}.".format(d.name, d.fileListPurpose))
+                        (filelist_file,) = (p for p, n in d.getArchivableResults(single=False) if n.endswith(".filelist"))
+                        if not exists(filelist_file):
+                            mx.abort("Distribution {} specifies a fileListPurpose {}, but file {} was not found.".format(d.name, d.fileListPurpose, filelist_file))
+                        with open(filelist_file, "r") as fp:
+                            for line in fp:
+                                contents.append(line.strip())
+
+            self._native_image_resources_filelist_contents = os.linesep.join(contents)
+        return self._native_image_resources_filelist_contents
+
+    def newestOutput(self):
+        paths = [self.subject.native_image_resources_filelist_file()]
+        return mx.TimeStampFile.newest(paths)
+
+    def build(self):
+        with mx.SafeFileCreation(self.subject.native_image_resources_filelist_file()) as sfc, io.open(sfc.tmpFd, mode='w', closefd=False, encoding='utf-8') as f:
+            f.write(self.native_image_resources_filelist_contents())
+
+    def clean(self, forBuild=False):
+        if exists(self.subject.native_image_resources_filelist_file()):
+            os.unlink(self.subject.native_image_resources_filelist_file())
+
+    def __str__(self):
+        return 'Building {}'.format(self.subject.name)
 
 class GraalVmNativeImageBuildTask(_with_metaclass(ABCMeta, mx.ProjectBuildTask)):
     def __init__(self, args, parallelism, project):
@@ -2856,6 +2942,7 @@ def mx_register_dynamic_suite_constituents(register_project, register_distributi
     installables = {}
     jvmci_parent_jars = []
     modified_jmods = {}
+    dir_name_to_ni_resources_components = {}
 
     for component in registered_graalvm_components(stage1=False):
         if component.name in names:
@@ -2891,10 +2978,25 @@ def mx_register_dynamic_suite_constituents(register_project, register_distributi
                     register_project(launcher_project)
                     polyglot_config_project = PolyglotConfig(component, library_config)
                     register_project(polyglot_config_project)
+            if isinstance(component, mx_sdk.GraalVmLanguage) and component.support_distributions:
+                ni_resources_components = dir_name_to_ni_resources_components.get(component.dir_name)
+                if not ni_resources_components:
+                    ni_resources_components = []
+                    dir_name_to_ni_resources_components[component.dir_name] = ni_resources_components
+                ni_resources_components.append(component)
+
         if component.installable and not _disable_installable(component):
             installables.setdefault(component.installable_id, []).append(component)
         if libpolyglot_component is not None and GraalVmLibPolyglotNativeProperties.needs_lib_polyglot_native_properties(component):
             register_distribution(GraalVmLibPolyglotNativeProperties(component))
+
+    for dir_name in dir_name_to_ni_resources_components:
+        ni_resources_components = dir_name_to_ni_resources_components.get(dir_name)
+        deps = []
+        for component in ni_resources_components:
+            deps.extend(component.support_distributions)
+        native_image_resources_filelist_project = NativeImageResourcesFileList(None, ni_resources_components, dir_name, deps)
+        register_project(native_image_resources_filelist_project)
 
     # Create installables
     for components in installables.values():
