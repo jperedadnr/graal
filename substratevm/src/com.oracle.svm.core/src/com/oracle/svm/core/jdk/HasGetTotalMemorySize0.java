@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,21 +22,32 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package com.oracle.svm.hosted.image;
 
-import com.oracle.svm.core.feature.AutomaticallyRegisteredFeature;
-import com.oracle.svm.core.feature.InternalFeature;
-import com.oracle.svm.core.heap.FillerObject;
-import com.oracle.svm.hosted.FeatureImpl.BeforeAnalysisAccessImpl;
-import com.oracle.svm.util.ReflectionUtil;
+package com.oracle.svm.core.jdk;
 
-@AutomaticallyRegisteredFeature
-class ImageHeapFillerObjectsFeature implements InternalFeature {
+import java.util.function.BooleanSupplier;
+
+/**
+ * A predicate that returns {@code true} iff
+ * {@code boolean jdk.internal.platform.CgroupMetrics.getTotalMemorySize0()} exists. It should only
+ * be used in conjunction with {@link CgroupMetricsJDK} as {@code CgroupMetrics} isn't available in
+ * all JDKs.
+ */
+public class HasGetTotalMemorySize0 implements BooleanSupplier {
+
     @Override
-    public void beforeAnalysis(BeforeAnalysisAccess arg) {
-        BeforeAnalysisAccessImpl access = (BeforeAnalysisAccessImpl) arg;
-        access.registerAsAccessed(ReflectionUtil.lookupField(FillerObject.class, "CLASS_OBJECT"));
-        access.registerAsInHeap(FillerObject.class, "Registered by ImageHeapFillerObjectsFeature.");
-        access.registerAsInHeap(int[].class, "Registered by ImageHeapFillerObjectsFeature.");
+    public boolean getAsBoolean() {
+        Module javaBase = ModuleLayer.boot().findModule("java.base").orElseThrow();
+        Class<?> cgroupMetrics = Class.forName(javaBase, CgroupMetricsJDK.CGROUP_METRICS_CLASS);
+        if (cgroupMetrics != null) {
+            try {
+                cgroupMetrics.getDeclaredMethod("getTotalMemorySize0");
+                return true;
+            } catch (Exception e) {
+                return false;
+            }
+        }
+        return false;
     }
+
 }
