@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,15 +22,14 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package org.graalvm.compiler.hotspot.amd64;
+package com.oracle.svm.core.option;
 
-import org.graalvm.compiler.lir.GeneratedStubsHolder;
-import org.graalvm.compiler.replacements.amd64.AMD64ArrayRegionEqualsWithMaskNode;
-import org.graalvm.compiler.replacements.amd64.AMD64CalcStringAttributesNode;
+public interface SubstrateOptionKey<T> {
+    void validate();
 
-@GeneratedStubsHolder(targetVM = "hotspot", sources = {
-                AMD64ArrayRegionEqualsWithMaskNode.class,
-                AMD64CalcStringAttributesNode.class,
-})
-public final class AMD64HotspotIntrinsicStubs {
+    boolean hasBeenSet();
+
+    T getValue();
+
+    String getName();
 }
