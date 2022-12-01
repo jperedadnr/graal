@@ -95,6 +95,7 @@ import com.oracle.svm.core.stack.StackOverflowCheck;
 import com.oracle.svm.core.thread.VMThreads.StatusSupport;
 import com.oracle.svm.core.threadlocal.FastThreadLocal;
 import com.oracle.svm.core.threadlocal.FastThreadLocalFactory;
+import com.oracle.svm.core.threadlocal.FastThreadLocalLong;
 import com.oracle.svm.core.threadlocal.FastThreadLocalObject;
 import com.oracle.svm.core.util.TimeUtils;
 import com.oracle.svm.core.util.VMError;
@@ -123,6 +124,13 @@ public abstract class PlatformThreads {
 
     /** The platform {@link java.lang.Thread} for the {@link IsolateThread}. */
     static final FastThreadLocalObject<Thread> currentThread = FastThreadLocalFactory.createObject(Thread.class, "PlatformThreads.currentThread").setMaxOffset(FastThreadLocal.BYTE_OFFSET);
+
+    /**
+     * The {@linkplain JavaThreads#getThreadId thread id} of the {@link Thread#currentThread()},
+     * which can be a {@linkplain Target_java_lang_Thread#vthread virtual thread} or the
+     * {@linkplain #currentThread platform thread itself}.
+     */
+    static final FastThreadLocalLong currentVThreadId = FastThreadLocalFactory.createLong("PlatformThreads.currentVThreadId").setMaxOffset(FastThreadLocal.BYTE_OFFSET);
 
     /**
      * A thread-local helper object for locking. Use only if each {@link Thread} corresponds to an
@@ -300,13 +308,22 @@ public abstract class PlatformThreads {
     }
 
     /** Before detaching a thread, run any Java cleanup code. */
-    static void cleanupBeforeDetach(IsolateThread thread) {
+    static void threadExit(IsolateThread thread) {
         VMError.guarantee(thread.equal(CurrentIsolate.getCurrentThread()), "Cleanup must execute in detaching thread");
 
         Thread javaThread = currentThread.get(thread);
         if (javaThread != null) {
             toTarget(javaThread).exit();
-            ThreadListenerSupport.get().afterThreadExit(CurrentIsolate.getCurrentThread(), javaThread);
+        }
+    }
+
+    @Uninterruptible(reason = "Only uninterruptible code may be executed after Thread.exit.")
+    static void afterThreadExit(IsolateThread thread) {
+        VMError.guarantee(thread.equal(CurrentIsolate.getCurrentThread()), "Cleanup must execute in detaching thread");
+
+        Thread javaThread = currentThread.get(thread);
+        if (javaThread != null) {
+            ThreadListenerSupport.get().afterThreadExit(thread, javaThread);
         }
     }
 
@@ -453,7 +470,7 @@ public abstract class PlatformThreads {
      * {@link #ensureCurrentAssigned(String, ThreadGroup, boolean)}. It is false when the thread is
      * started via {@link #doStartThread} and {@link #threadStartRoutine}.
      */
-    public static void assignCurrent(Thread thread, boolean manuallyStarted) {
+    static void assignCurrent(Thread thread, boolean manuallyStarted) {
         /*
          * First of all, ensure we are in RUNNABLE state. If !manuallyStarted, we race with the
          * thread that launched us to set the status and we could still be in status NEW.
@@ -479,6 +496,7 @@ public abstract class PlatformThreads {
     @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
     private static void assignCurrent0(Thread thread) {
         VMError.guarantee(currentThread.get() == null, "overwriting existing java.lang.Thread");
+        currentVThreadId.set(JavaThreads.getThreadId(thread));
         currentThread.set(thread);
 
         assert toTarget(thread).isolateThread.isNull();
@@ -486,10 +504,12 @@ public abstract class PlatformThreads {
         ThreadListenerSupport.get().beforeThreadStart(CurrentIsolate.getCurrentThread(), thread);
     }
 
+    @Uninterruptible(reason = "Ensure consistency of vthread and cached vthread id.")
     static void setCurrentThread(Thread carrier, Thread thread) {
         assert carrier == currentThread.get();
         assert thread == carrier || (VirtualThreads.isSupported() && VirtualThreads.singleton().isVirtual(thread));
         toTarget(carrier).vthread = (thread != carrier) ? thread : null;
+        currentVThreadId.set(JavaThreads.getThreadId(thread));
     }
 
     @Uninterruptible(reason = "Called during isolate initialization")
@@ -678,6 +698,7 @@ public abstract class PlatformThreads {
         return !VMOperationControl.isDedicatedVMOperationThread(isolateThread);
     }
 
+    /** This method should only be used to exit the main thread. */
     @SuppressFBWarnings(value = "NN", justification = "notifyAll is necessary for Java semantics, no shared state needs to be modified beforehand")
     public static void exit(Thread thread) {
         /*
