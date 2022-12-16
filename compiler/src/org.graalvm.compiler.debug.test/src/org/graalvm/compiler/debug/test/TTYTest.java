@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,13 +22,45 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package org.graalvm.compiler.asm.amd64;
+package org.graalvm.compiler.debug.test;
 
-public class AMD64AsmOptions {
-    public static final boolean UseNormalNop = false;
-    public static final boolean UseAddressNop = true;
-    public static final boolean UseIntelNops = true;
-    public static final boolean UseIncDec = true;
-    public static final boolean UseXmmLoadAndClearUpper = true;
-    public static final boolean UseXmmRegToRegMoveAll = true;
+import org.graalvm.compiler.debug.TTY;
+import org.junit.Test;
+
+public class TTYTest {
+
+    @Test
+    @SuppressWarnings("try")
+    public void testTTYFiltered() throws Exception {
+        try (AutoCloseable c = new TTY.Filter()) {
+            printAll();
+        }
+    }
+
+    @Test
+    @SuppressWarnings("try")
+    public void testTTYNoFilter() throws Exception {
+        printAll();
+    }
+
+    private static void printAll() {
+        TTY.print(Integer.MAX_VALUE);
+        TTY.print('A');
+        TTY.print(Long.MAX_VALUE);
+        TTY.print(Float.MAX_VALUE);
+        TTY.print(Double.MAX_VALUE);
+        TTY.print(true);
+
+        TTY.println();
+        TTY.println(Integer.MAX_VALUE);
+        TTY.println('A');
+        TTY.println(Long.MAX_VALUE);
+        TTY.println(Float.MAX_VALUE);
+        TTY.println(Double.MAX_VALUE);
+        TTY.println(true);
+
+        TTY.fillTo(10);
+
+        TTY.flush();
+    }
 }
