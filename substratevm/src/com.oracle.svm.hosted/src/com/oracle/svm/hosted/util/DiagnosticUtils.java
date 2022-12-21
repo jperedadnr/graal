@@ -22,35 +22,33 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package com.oracle.svm.core.util;
+package com.oracle.svm.hosted.util;
 
-/** Exit status codes to be used at build time (in driver and builder). */
-public enum ExitStatus {
-    OK(0),
-    BUILDER_ERROR(1),
-    FALLBACK_IMAGE(2),
-    BUILDER_INTERRUPT_WITHOUT_REASON(3),
-    DRIVER_ERROR(20),
-    DRIVER_TO_BUILDER_ERROR(21),
-    WATCHDOG_EXIT(30),
-    MISSING_METADATA(172);
+import java.lang.management.ManagementFactory;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.stream.Collectors;
 
-    public static ExitStatus of(int status) {
-        for (ExitStatus s : values()) {
-            if (s.getValue() == status) {
-                return s;
-            }
-        }
-        return null;
+import com.oracle.svm.hosted.ImageClassLoader;
+
+public class DiagnosticUtils {
+    public static List<String> getClassPath(ImageClassLoader imageClassLoader) {
+        return imageClassLoader.classpath().stream().map(Path::toString).collect(Collectors.toList());
     }
 
-    private final int code;
-
-    ExitStatus(int code) {
-        this.code = code;
+    public static List<String> getModulePath(ImageClassLoader imageClassLoader) {
+        return imageClassLoader.modulepath().stream().map(Path::toString).collect(Collectors.toList());
     }
 
-    public int getValue() {
-        return code;
+    /* Get original arguments that got passed to the builder when it got started. */
+    public static List<String> getBuilderArguments(ImageClassLoader imageClassLoader) {
+        return imageClassLoader.classLoaderSupport.getHostedOptionParser().getArguments();
+    }
+
+    /* Get system properties that got passed to the VM that runs the builder. */
+    public static List<String> getBuilderProperties() {
+        return ManagementFactory.getRuntimeMXBean().getInputArguments().stream()
+                        .filter(arg -> arg.startsWith("-D"))
+                        .sorted().collect(Collectors.toList());
     }
 }
