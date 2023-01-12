@@ -332,7 +332,6 @@ public class TruffleFeature implements InternalFeature {
                 neverPartOfCompilationViolations.add(Pair.create(b.getMethod(), String.join(",", callTree)));
             }
         }
-
         return true;
     }
 
@@ -554,7 +553,7 @@ public class TruffleFeature implements InternalFeature {
     boolean isTargetBlocklisted(ResolvedJavaMethod target, ResolvedJavaMethod implementation) {
         boolean blocklisted = !((AnalysisMethod) target).allowRuntimeCompilation() || blocklistMethods.contains(target);
 
-        if (blocklisted && implementation != target && implementationOnlyBlocklist.contains(target)) {
+        if (blocklisted && !implementation.equals(target) && implementationOnlyBlocklist.contains(target)) {
             blocklisted = isBlocklisted(implementation);
         }
 
@@ -887,7 +886,7 @@ public class TruffleFeature implements InternalFeature {
                                     Frame.class.getTypeName(), SubstrateOptionsParser.commandArgument(Options.TruffleCheckFrameImplementation, "-"),
                                     implementations.stream().map(m -> m.toJavaName(true)).collect(Collectors.joining(", ")));
                 } else {
-                    assert implementations.size() == 0 || implementations.iterator().next() == frameType.getSingleImplementor();
+                    assert implementations.size() == 0 || implementations.iterator().next().equals(frameType.getSingleImplementor());
                 }
             }
         }
@@ -980,6 +979,7 @@ public class TruffleFeature implements InternalFeature {
                 }
             }
         }
+
         System.out.printf("Number of Truffle call boundaries: %d, number of unique called methods outside the boundary: %d%n", callSiteCount, calleeCount);
     }
 

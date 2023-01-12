@@ -38,7 +38,6 @@ import org.graalvm.nativeimage.ImageSingletons;
 import com.oracle.graal.pointsto.infrastructure.UniverseMetaAccess;
 import com.oracle.graal.pointsto.meta.AnalysisMethod;
 import com.oracle.graal.pointsto.meta.HostedProviders;
-import com.oracle.svm.core.SubstrateUtil;
 import com.oracle.svm.core.NeverInlineTrivial;
 import com.oracle.svm.hosted.meta.HostedMethod;
 import com.oracle.svm.hosted.phases.HostedGraphKit;
@@ -50,13 +49,13 @@ import jdk.vm.ci.meta.ResolvedJavaMethod;
 import jdk.vm.ci.meta.ResolvedJavaType;
 import jdk.vm.ci.meta.Signature;
 
-public final class FactoryMethod extends NonBytecodeStaticMethod {
+public final class FactoryMethod extends NonBytecodeMethod {
 
     private final ResolvedJavaMethod targetConstructor;
     private final boolean throwAllocatedObject;
 
-    FactoryMethod(ResolvedJavaMethod targetConstructor, ResolvedJavaType declaringClass, Signature signature, ConstantPool constantPool, boolean throwAllocatedObject) {
-        super(SubstrateUtil.uniqueStubName(targetConstructor), declaringClass, signature, constantPool);
+    FactoryMethod(String name, ResolvedJavaMethod targetConstructor, ResolvedJavaType declaringClass, Signature signature, ConstantPool constantPool, boolean throwAllocatedObject) {
+        super(name, true, declaringClass, signature, constantPool);
         this.targetConstructor = targetConstructor;
         this.throwAllocatedObject = throwAllocatedObject;
 
