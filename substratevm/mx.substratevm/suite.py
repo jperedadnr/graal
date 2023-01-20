@@ -1,6 +1,6 @@
 # pylint: disable=line-too-long
 suite = {
-    "mxversion" : "6.11.4",
+    "mxversion": "6.14.13",
     "name": "substratevm",
     "version" : "23.0.0",
     "release" : False,
@@ -1157,6 +1157,9 @@ suite = {
             "dependencies": [
                 "com.oracle.svm.graal",
                 "compiler:GRAAL"
+            ],
+            "requires" : [
+            	"jdk.management"
             ],
             "requiresConcealed" : {
                 "java.base" : [

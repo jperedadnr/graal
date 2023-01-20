@@ -24,7 +24,6 @@
  */
 package com.oracle.graal.pointsto.meta;
 
-import java.lang.reflect.AnnotatedElement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -845,16 +844,16 @@ public abstract class AnalysisType extends AnalysisElement implements WrappedJav
 
     @Override
     public ResolvedJavaType getWrapped() {
-        return universe.substitutions.resolve(wrapped);
+        return wrapped;
     }
 
-    public ResolvedJavaType getWrappedWithoutResolve() {
-        return wrapped;
+    public ResolvedJavaType getWrappedWithResolve() {
+        return universe.substitutions.resolve(wrapped);
     }
 
     @Override
     public Class<?> getJavaClass() {
-        return OriginalClassProvider.getJavaClass(universe.getOriginalSnippetReflection(), wrapped);
+        return OriginalClassProvider.getJavaClass(wrapped);
     }
 
     @Override
@@ -938,8 +937,7 @@ public abstract class AnalysisType extends AnalysisElement implements WrappedJav
 
     @Override
     public boolean isAssignableFrom(ResolvedJavaType other) {
-        ResolvedJavaType subst = universe.substitutions.resolve(((AnalysisType) other).wrapped);
-        return wrapped.isAssignableFrom(subst);
+        return wrapped.isAssignableFrom(((AnalysisType) other).getWrappedWithResolve());
     }
 
     @Override
@@ -1000,8 +998,7 @@ public abstract class AnalysisType extends AnalysisElement implements WrappedJav
 
     @Override
     public AnalysisType findLeastCommonAncestor(ResolvedJavaType otherType) {
-        ResolvedJavaType subst = universe.substitutions.resolve(((AnalysisType) otherType).wrapped);
-        return universe.lookup(wrapped.findLeastCommonAncestor(subst));
+        return universe.lookup(wrapped.findLeastCommonAncestor(((AnalysisType) otherType).getWrappedWithResolve()));
     }
 
     @Override
@@ -1124,11 +1121,11 @@ public abstract class AnalysisType extends AnalysisElement implements WrappedJav
         return result;
     }
 
-    private AnalysisField[] convertFields(ResolvedJavaField[] original, List<AnalysisField> list, boolean listIncludesSuperClassesFields) {
-        for (int i = 0; i < original.length; i++) {
-            if (!original[i].isInternal()) {
+    private AnalysisField[] convertFields(ResolvedJavaField[] originals, List<AnalysisField> list, boolean listIncludesSuperClassesFields) {
+        for (ResolvedJavaField original : originals) {
+            if (!original.isInternal() && universe.hostVM.platformSupported(original)) {
                 try {
-                    AnalysisField aField = universe.lookup(original[i]);
+                    AnalysisField aField = universe.lookup(original);
                     if (aField != null) {
                         if (listIncludesSuperClassesFields || aField.isStatic()) {
                             /*
@@ -1149,11 +1146,6 @@ public abstract class AnalysisType extends AnalysisElement implements WrappedJav
     @Override
     public AnalysisField[] getStaticFields() {
         return convertFields(wrapped.getStaticFields(), new ArrayList<>(), false);
-    }
-
-    @Override
-    public AnnotatedElement getAnnotationRoot() {
-        return wrapped;
     }
 
     @Override
@@ -1261,6 +1253,7 @@ public abstract class AnalysisType extends AnalysisElement implements WrappedJav
         return universe.lookup(wrapped.getHostClass());
     }
 
+    @Override
     public AnalysisUniverse getUniverse() {
         return universe;
     }

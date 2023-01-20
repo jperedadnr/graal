@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,24 +22,37 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package org.graalvm.compiler.options;
+package com.oracle.svm.hosted.meta;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.AnnotatedElement;
 
-/**
- * Used to suppress <a href="https://spotbugs.readthedocs.io">SpotBugs</a> warnings.
- */
-@Retention(RetentionPolicy.CLASS)
-@interface SuppressFBWarnings {
-    /**
-     * @see "https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html"
-     */
-    String[] value();
+public abstract class HostedElement implements AnnotatedElement {
 
-    /**
-     * Reason why the warning is suppressed. Use a SpotBugs issue id where appropriate.
-     */
+    protected abstract AnnotatedElement getWrapped();
 
-    String justification();
+    @Override
+    public final boolean isAnnotationPresent(Class<? extends Annotation> annotationClass) {
+        return getWrapped().isAnnotationPresent(annotationClass);
+    }
+
+    @Override
+    public final <T extends Annotation> T getAnnotation(Class<T> annotationClass) {
+        return getWrapped().getAnnotation(annotationClass);
+    }
+
+    @Override
+    public final <T extends Annotation> T getDeclaredAnnotation(Class<T> annotationClass) {
+        return getWrapped().getDeclaredAnnotation(annotationClass);
+    }
+
+    @Override
+    public final Annotation[] getAnnotations() {
+        return getWrapped().getAnnotations();
+    }
+
+    @Override
+    public final Annotation[] getDeclaredAnnotations() {
+        return getWrapped().getDeclaredAnnotations();
+    }
 }
