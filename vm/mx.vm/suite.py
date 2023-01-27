@@ -75,7 +75,7 @@ suite = {
             },
             {
                 "name": "graalpython",
-                "version": "7b2e6cab85971e4adc2648b290b1c2ba1414b15f",
+                "version": "1e7b121b360d66673db9316a29e79dd6a916878a",
                 "dynamic": True,
                 "urls": [
                     {"url": "https://github.com/graalvm/graalpython.git", "kind": "git"},
@@ -97,7 +97,7 @@ suite = {
         "org.graalvm.component.installer" : {
             "subDir" : "src",
             "sourceDirs" : ["src"],
-            "javaCompliance" : "11+",
+            "javaCompliance" : "17+",
             "license" : "GPLv2-CPE",
             "checkstyleVersion" : "8.36.1",
             "dependencies": [
@@ -113,7 +113,7 @@ suite = {
                 "mx:JUNIT",
                 "org.graalvm.component.installer"
             ],
-            "javaCompliance" : "11+",
+            "javaCompliance" : "17+",
             "checkstyle": "org.graalvm.component.installer",
             "license" : "GPLv2-CPE",
             "requires" : ["java.logging"],
@@ -121,7 +121,7 @@ suite = {
         "org.graalvm.polybench" : {
             "subDir" : "src",
             "sourceDirs" : ["src"],
-            "javaCompliance" : "11+",
+            "javaCompliance" : "17+",
             "license" : "GPLv2-CPE",
             "checkstyle": "org.graalvm.component.installer",
             "dependencies": [
@@ -136,7 +136,7 @@ suite = {
         "org.graalvm.polybench.micro" : {
             "subDir" : "src",
             "sourceDirs" : ["src"],
-            "javaCompliance" : "11+",
+            "javaCompliance" : "17+",
             "license" : "GPLv2-CPE",
             "checkstyle": "org.graalvm.component.installer",
             "dependencies": [
@@ -150,7 +150,7 @@ suite = {
         "org.graalvm.polybench.instruments" : {
             "subDir" : "src",
             "sourceDirs" : ["src"],
-            "javaCompliance" : "11+",
+            "javaCompliance" : "17+",
             "license" : "GPLv2-CPE",
             "checkstyle": "org.graalvm.component.installer",
             "dependencies": [
