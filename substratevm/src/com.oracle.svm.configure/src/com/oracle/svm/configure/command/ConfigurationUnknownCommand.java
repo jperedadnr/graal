@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,31 +22,32 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package org.graalvm.compiler.api.replacements;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+package com.oracle.svm.configure.command;
 
-/**
- * Annotates a method replaced by a compile-time constant. A (resolved) call to the annotated method
- * is replaced with a constant obtained by calling the annotated method via reflection.
- *
- * All arguments to such a method (including the receiver if applicable) must be compile-time
- * constants.
- */
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
-public @interface Fold {
+import java.io.IOException;
+import java.util.Iterator;
 
-    /**
-     * Annotates a parameter to an {@link Fold}-annotated method. This parameter will be
-     * automatically injected by the compiler. A call from non-generated code must always pass
-     * {@code null} for an injected parameter.
-     */
-    @Retention(RetentionPolicy.RUNTIME)
-    @Target(ElementType.PARAMETER)
-    @interface InjectedParameter {
+import com.oracle.svm.configure.ConfigurationUsageException;
+
+public final class ConfigurationUnknownCommand extends ConfigurationCommand {
+    @Override
+    public String getName() {
+        throw new UnsupportedOperationException("Operation is not supported.");
+    }
+
+    @Override
+    public void apply(Iterator<String> argumentsIterator) throws IOException {
+        throw new ConfigurationUsageException("Unknown command.");
+    }
+
+    @Override
+    public String getUsage() {
+        throw new UnsupportedOperationException("Operation is not supported.");
+    }
+
+    @Override
+    protected String getDescription0() {
+        throw new UnsupportedOperationException("Operation is not supported.");
     }
 }
