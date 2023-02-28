@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,33 +38,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.truffle.api.staticobject;
+package org.graalvm.wasm.predefined.wasi;
 
-final class FieldBasedStaticShape<T> extends StaticShape<T> {
-    private FieldBasedStaticShape(Class<?> storageClass, boolean safetyChecks) {
-        super(storageClass, safetyChecks);
-    }
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 
-    static <T> FieldBasedStaticShape<T> create(Class<?> generatedStorageClass, Class<? extends T> generatedFactoryClass, boolean safetyChecks) {
-        try {
-            FieldBasedStaticShape<T> shape = new FieldBasedStaticShape<>(generatedStorageClass, safetyChecks);
-            T factory = generatedFactoryClass.cast(UNSAFE.allocateInstance(generatedFactoryClass));
-            shape.setFactory(factory);
-            return shape;
-        } catch (InstantiationException e) {
-            throw new RuntimeException(e);
-        }
-    }
+/**
+ * Used to suppress <a href="https://spotbugs.readthedocs.io">SpotBugs</a> warnings.
+ */
+@Retention(RetentionPolicy.CLASS)
+@interface SuppressFBWarnings {
+    /**
+     * @see "https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html"
+     */
+    String[] value();
 
-    @Override
-    Object getStorage(Object obj, boolean primitive) {
-        return cast(obj, storageClass, true);
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    Class<T> getFactoryInterface() {
-        assert factory.getClass().getInterfaces().length == 1;
-        return (Class<T>) factory.getClass().getInterfaces()[0];
-    }
+    /**
+     * Reason why the warning is suppressed. Use a SpotBugs issue id where appropriate.
+     */
+    String justification();
 }

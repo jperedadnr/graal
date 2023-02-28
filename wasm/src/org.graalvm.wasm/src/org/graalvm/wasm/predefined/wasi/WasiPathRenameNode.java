@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,33 +38,41 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.truffle.api.staticobject;
+package org.graalvm.wasm.predefined.wasi;
 
-final class FieldBasedStaticShape<T> extends StaticShape<T> {
-    private FieldBasedStaticShape(Class<?> storageClass, boolean safetyChecks) {
-        super(storageClass, safetyChecks);
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import org.graalvm.wasm.WasmContext;
+import org.graalvm.wasm.WasmInstance;
+import org.graalvm.wasm.WasmLanguage;
+import org.graalvm.wasm.predefined.WasmBuiltinRootNode;
+import org.graalvm.wasm.predefined.wasi.fd.Fd;
+import org.graalvm.wasm.predefined.wasi.types.Errno;
+
+public class WasiPathRenameNode extends WasmBuiltinRootNode {
+
+    public WasiPathRenameNode(WasmLanguage language, WasmInstance instance) {
+        super(language, instance);
     }
 
-    static <T> FieldBasedStaticShape<T> create(Class<?> generatedStorageClass, Class<? extends T> generatedFactoryClass, boolean safetyChecks) {
-        try {
-            FieldBasedStaticShape<T> shape = new FieldBasedStaticShape<>(generatedStorageClass, safetyChecks);
-            T factory = generatedFactoryClass.cast(UNSAFE.allocateInstance(generatedFactoryClass));
-            shape.setFactory(factory);
-            return shape;
-        } catch (InstantiationException e) {
-            throw new RuntimeException(e);
+    @Override
+    public Object executeWithContext(VirtualFrame frame, WasmContext context) {
+        final Object[] args = frame.getArguments();
+        return pathRename(context, (int) args[0], (int) args[1], (int) args[2], (int) args[3], (int) args[4], (int) args[5]);
+    }
+
+    @TruffleBoundary
+    private int pathRename(WasmContext context, int oldFd, int oldPathAddress, int oldPathLength, int newFd, int newPathAddress, int newPathLength) {
+        final Fd oldHandle = context.fdManager().get(oldFd);
+        final Fd newHandle = context.fdManager().get(newFd);
+        if (oldHandle == null || newHandle == null) {
+            return Errno.Badf.ordinal();
         }
+        return oldHandle.pathRename(this, memory(), oldPathAddress, oldPathLength, newHandle, newPathAddress, newPathLength).ordinal();
     }
 
     @Override
-    Object getStorage(Object obj, boolean primitive) {
-        return cast(obj, storageClass, true);
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    Class<T> getFactoryInterface() {
-        assert factory.getClass().getInterfaces().length == 1;
-        return (Class<T>) factory.getClass().getInterfaces()[0];
+    public String builtinNodeName() {
+        return "__wasi_path_rename";
     }
 }

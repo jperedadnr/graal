@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,33 +38,45 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.truffle.api.staticobject;
+package org.graalvm.wasm.predefined.wasi;
 
-final class FieldBasedStaticShape<T> extends StaticShape<T> {
-    private FieldBasedStaticShape(Class<?> storageClass, boolean safetyChecks) {
-        super(storageClass, safetyChecks);
-    }
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import org.graalvm.wasm.WasmContext;
+import org.graalvm.wasm.WasmInstance;
+import org.graalvm.wasm.WasmLanguage;
+import org.graalvm.wasm.predefined.WasmBuiltinRootNode;
+import org.graalvm.wasm.predefined.wasi.types.Errno;
 
-    static <T> FieldBasedStaticShape<T> create(Class<?> generatedStorageClass, Class<? extends T> generatedFactoryClass, boolean safetyChecks) {
-        try {
-            FieldBasedStaticShape<T> shape = new FieldBasedStaticShape<>(generatedStorageClass, safetyChecks);
-            T factory = generatedFactoryClass.cast(UNSAFE.allocateInstance(generatedFactoryClass));
-            shape.setFactory(factory);
-            return shape;
-        } catch (InstantiationException e) {
-            throw new RuntimeException(e);
-        }
+import java.util.Random;
+
+/**
+ * WASI random_get for testing purposes.
+ */
+public class WasiConstantRandomGetNode extends WasmBuiltinRootNode {
+    private static final int SEED = 12345;
+
+    public WasiConstantRandomGetNode(WasmLanguage language, WasmInstance instance) {
+        super(language, instance);
     }
 
     @Override
-    Object getStorage(Object obj, boolean primitive) {
-        return cast(obj, storageClass, true);
+    public Object executeWithContext(VirtualFrame frame, WasmContext context) {
+        final Object[] args = frame.getArguments();
+        return randomGet((int) args[0], (int) args[1]);
+    }
+
+    @SuppressFBWarnings(value = "DMI_RANDOM_USED_ONLY_ONCE", justification = "This is a testing class only")
+    @CompilerDirectives.TruffleBoundary
+    private Object randomGet(int buf, int size) {
+        byte[] randomData = new byte[size];
+        new Random(SEED).nextBytes(randomData);
+        memory().initialize(randomData, 0, buf, size);
+        return Errno.Success.ordinal();
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    Class<T> getFactoryInterface() {
-        assert factory.getClass().getInterfaces().length == 1;
-        return (Class<T>) factory.getClass().getInterfaces()[0];
+    public String builtinNodeName() {
+        return "__wasi_random_get";
     }
 }
