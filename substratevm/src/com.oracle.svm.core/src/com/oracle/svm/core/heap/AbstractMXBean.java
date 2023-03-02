@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2015, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2023, BELLSOFT. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,20 +25,29 @@
  */
 package com.oracle.svm.core.heap;
 
-public interface GC {
-    /** Cause a collection of the Heap's choosing. */
-    void collect(GCCause cause);
+import javax.management.MBeanNotificationInfo;
+import javax.management.NotificationEmitter;
+import javax.management.NotificationFilter;
+import javax.management.NotificationListener;
 
-    /** Cause a full collection. */
-    void collectCompletely(GCCause cause);
+public abstract class AbstractMXBean implements NotificationEmitter {
 
-    /** Human-readable name. */
-    String getName();
+    protected static final long UNDEFINED_MEMORY_USAGE = -1L;
 
-    /** Human-readable default heap size. */
-    String getDefaultMaxHeapSize();
+    @Override
+    public void removeNotificationListener(NotificationListener listener, NotificationFilter filter, Object handback) {
+    }
 
-    /** Issue an optional GC request. */
-    default void maybeCauseUserRequestedCollection(@SuppressWarnings("unused") GCCause cause, @SuppressWarnings("unused") boolean fullGC) {
+    @Override
+    public void addNotificationListener(NotificationListener listener, NotificationFilter filter, Object handback) {
+    }
+
+    @Override
+    public void removeNotificationListener(NotificationListener listener) {
+    }
+
+    @Override
+    public MBeanNotificationInfo[] getNotificationInfo() {
+        return new MBeanNotificationInfo[0];
     }
 }

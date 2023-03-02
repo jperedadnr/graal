@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,22 +22,29 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package com.oracle.svm.core.heap;
+package com.oracle.svm.core.jni.headers;
 
-public interface GC {
-    /** Cause a collection of the Heap's choosing. */
-    void collect(GCCause cause);
+import org.graalvm.compiler.serviceprovider.JavaVersionUtil;
+import org.graalvm.nativeimage.c.CContext;
+import org.graalvm.nativeimage.c.constant.CConstant;
 
-    /** Cause a full collection. */
-    void collectCompletely(GCCause cause);
+final class JNIHeaderDirectivesJDK20OrLater extends JNIHeaderDirectives {
+    @Override
+    public boolean isInConfiguration() {
+        return JavaVersionUtil.JAVA_SPEC >= 20;
+    }
+}
 
-    /** Human-readable name. */
-    String getName();
+@CContext(JNIHeaderDirectivesJDK20OrLater.class)
+public final class JNIVersionJDK20OrLater {
 
-    /** Human-readable default heap size. */
-    String getDefaultMaxHeapSize();
+    // Checkstyle: stop
 
-    /** Issue an optional GC request. */
-    default void maybeCauseUserRequestedCollection(@SuppressWarnings("unused") GCCause cause, @SuppressWarnings("unused") boolean fullGC) {
+    @CConstant
+    public static native int JNI_VERSION_20();
+
+    // Checkstyle: resume
+
+    private JNIVersionJDK20OrLater() {
     }
 }
