@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -59,6 +59,7 @@ import org.graalvm.compiler.lir.aarch64.AArch64ArrayRegionCompareToOp;
 import org.graalvm.compiler.lir.aarch64.AArch64AtomicMove;
 import org.graalvm.compiler.lir.aarch64.AArch64AtomicMove.AtomicReadAndWriteOp;
 import org.graalvm.compiler.lir.aarch64.AArch64AtomicMove.CompareAndSwapOp;
+import org.graalvm.compiler.lir.aarch64.AArch64BigIntegerMulAddOp;
 import org.graalvm.compiler.lir.aarch64.AArch64BigIntegerMultiplyToLenOp;
 import org.graalvm.compiler.lir.aarch64.AArch64ByteSwap;
 import org.graalvm.compiler.lir.aarch64.AArch64CacheWritebackOp;
@@ -96,7 +97,6 @@ import org.graalvm.compiler.phases.util.Providers;
 
 import jdk.vm.ci.aarch64.AArch64;
 import jdk.vm.ci.aarch64.AArch64Kind;
-import jdk.vm.ci.code.CallingConvention;
 import jdk.vm.ci.code.Register;
 import jdk.vm.ci.code.RegisterValue;
 import jdk.vm.ci.code.StackSlot;
@@ -703,6 +703,13 @@ public abstract class AArch64LIRGenerator extends LIRGenerator {
     }
 
     @Override
+    public Variable emitBigIntegerMulAdd(Value out, Value in, Value offset, Value len, Value k) {
+        Variable result = newVariable(len.getValueKind());
+        append(new AArch64BigIntegerMulAddOp(this, asAllocatable(out), asAllocatable(in), asAllocatable(offset), asAllocatable(len), asAllocatable(k), asAllocatable(result)));
+        return result;
+    }
+
+    @Override
     public Variable emitCalcStringAttributes(CalcStringAttributesEncoding encoding, EnumSet<?> runtimeCheckedCPUFeatures, Value array, Value offset, Value length, boolean assumeValid) {
         Variable result = newVariable(LIRKind.value(encoding == CalcStringAttributesEncoding.UTF_8 || encoding == CalcStringAttributesEncoding.UTF_16 ? AArch64Kind.QWORD : AArch64Kind.DWORD));
         append(new AArch64CalcStringAttributesOp(this, encoding, emitConvertNullToZero(array), asAllocatable(offset), asAllocatable(length), result, assumeValid));
@@ -783,8 +790,6 @@ public abstract class AArch64LIRGenerator extends LIRGenerator {
     public LIRInstruction createZapArgumentSpace(StackSlot[] zappedStack, JavaConstant[] zapValues) {
         return new AArch64ZapStackOp(zappedStack, zapValues);
     }
-
-    public abstract void emitCCall(long address, CallingConvention nativeCallingConvention, Value[] args);
 
     @Override
     public void emitSpeculationFence() {
