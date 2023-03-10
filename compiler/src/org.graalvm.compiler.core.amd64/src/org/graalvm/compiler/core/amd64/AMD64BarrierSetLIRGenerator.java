@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,39 +22,31 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package com.oracle.svm.core.jdk;
+package org.graalvm.compiler.core.amd64;
 
-import org.graalvm.nativeimage.c.struct.RawField;
-import org.graalvm.nativeimage.c.struct.RawStructure;
-import org.graalvm.word.PointerBase;
+import org.graalvm.compiler.core.common.LIRKind;
+import org.graalvm.compiler.core.common.memory.BarrierType;
+import org.graalvm.compiler.lir.amd64.AMD64AddressValue;
+import org.graalvm.compiler.lir.gen.BarrierSetLIRGenerator;
+
+import jdk.vm.ci.amd64.AMD64Kind;
+import jdk.vm.ci.code.RegisterValue;
+import jdk.vm.ci.meta.AllocatableValue;
+import jdk.vm.ci.meta.Value;
 
 /**
- * The common interface for the LinkedList entries that can be used in an
- * {@link AbstractUninterruptibleHashtable}.
+ * AMD64 specific LIR generation for GC barriers.
  */
-@RawStructure
-public interface UninterruptibleEntry extends PointerBase {
-    /**
-     * Gets the next entry.
-     */
-    @RawField
-    <T extends UninterruptibleEntry> T getNext();
+public abstract class AMD64BarrierSetLIRGenerator extends BarrierSetLIRGenerator {
 
     /**
-     * Sets the next entry.
+     * Emit an atomic read-and-write instruction with any required GC barriers.
      */
-    @RawField
-    void setNext(UninterruptibleEntry value);
+    public abstract Value emitAtomicReadAndWrite(LIRKind readKind, Value address, Value newValue, BarrierType barrierType);
 
     /**
-     * Get the hashcode for the entry.
+     * Emit an atomic compare and swap with any required GC barriers.
      */
-    @RawField
-    int getHash();
-
-    /**
-     * Sets the hashcode for the entry.
-     */
-    @RawField
-    void setHash(int value);
+    public abstract void emitCompareAndSwapOp(LIRKind accessKind, AMD64Kind memKind, RegisterValue raxValue, AMD64AddressValue address, AllocatableValue newValue,
+                    BarrierType barrierType);
 }

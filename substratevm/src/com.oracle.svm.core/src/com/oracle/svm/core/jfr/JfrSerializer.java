@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2020, 2022, Red Hat Inc. All rights reserved.
+ * Copyright (c) 2023, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,23 +22,9 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
+package com.oracle.svm.core.jfr;
 
-package com.oracle.svm.test.jfr.utils;
-
-import java.io.IOException;
-
-import jdk.jfr.Recording;
-
-/**
- * Utility class to handle recording.
- */
-public interface Jfr {
-
-    Recording createRecording(String recordingName) throws Exception;
-
-    void startRecording(Recording recording);
-
-    void endRecording(Recording recording) throws Exception;
-
-    void cleanupRecording(Recording recording) throws IOException;
+/** Serializers are only written upon a new chunk. */
+public interface JfrSerializer {
+    void write(JfrChunkWriter writer);
 }

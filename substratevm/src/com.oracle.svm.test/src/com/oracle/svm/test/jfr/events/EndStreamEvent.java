@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2023, Red Hat Inc. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,20 +23,18 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package com.oracle.svm.core.jfr;
 
-import org.graalvm.nativeimage.c.struct.RawPointerTo;
-import org.graalvm.word.PointerBase;
+package com.oracle.svm.test.jfr.events;
 
-/**
- * Pointer to an array of {@link JfrBuffer}s.
- */
-@RawPointerTo(JfrBuffer.class)
-public interface JfrBuffers extends PointerBase {
+import jdk.jfr.Description;
+import jdk.jfr.Event;
+import jdk.jfr.Label;
+import jdk.jfr.Name;
+import jdk.jfr.StackTrace;
 
-    JfrBuffers addressOf(long index);
-
-    void write(JfrBuffer value);
-
-    JfrBuffer read();
+@Name("com.jfr.EndStream")
+@Label("End Stream Event")
+@Description("Signals to end stream")
+@StackTrace(false)
+public class EndStreamEvent extends Event {
 }
