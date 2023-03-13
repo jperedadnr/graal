@@ -830,6 +830,7 @@ public class SubstrateOptions {
     @Option(help = "Define PageSize of a machine that runs the image. The default = 0 (== same as host machine page size)")//
     protected static final HostedOptionKey<Integer> PageSize = new HostedOptionKey<>(0);
 
+    @Fold
     public static int getPageSize() {
         int value = PageSize.getValue();
         if (value == 0) {
@@ -844,6 +845,7 @@ public class SubstrateOptions {
                 return 4096;
             }
         }
+        assert value > 0;
         return value;
     }
 
@@ -893,5 +895,8 @@ public class SubstrateOptions {
 
     @Option(help = "Instead of abort, only warn if image builder classes are found on the image class-path.", type = OptionType.Debug)//
     public static final HostedOptionKey<Boolean> AllowDeprecatedBuilderClassesOnImageClasspath = new HostedOptionKey<>(false);
+
+    @Option(help = "Throw Native Image-specific exceptions when encountering an unregistered reflection call.", type = OptionType.User)//
+    public static final HostedOptionKey<Boolean> ThrowMissingRegistrationErrors = new HostedOptionKey<>(false);
 
 }
