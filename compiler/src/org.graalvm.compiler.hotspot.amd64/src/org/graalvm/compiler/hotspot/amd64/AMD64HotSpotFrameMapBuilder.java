@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2022, 2022, Red Hat Inc. All rights reserved.
+ * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,27 +22,34 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
+package org.graalvm.compiler.hotspot.amd64;
 
-package com.oracle.svm.core.jdk;
+import org.graalvm.compiler.lir.amd64.AMD64FrameMapBuilder;
+import org.graalvm.compiler.lir.framemap.FrameMap;
 
-import com.oracle.svm.core.annotate.Alias;
-import com.oracle.svm.core.annotate.RecomputeFieldValue;
-import com.oracle.svm.core.annotate.Substitute;
-import com.oracle.svm.core.annotate.TargetClass;
-import com.oracle.svm.core.heap.Heap;
+import jdk.vm.ci.code.CodeCacheProvider;
+import jdk.vm.ci.code.RegisterConfig;
+import jdk.vm.ci.code.StackSlot;
 
-/**
- * Note that sun.rmi.transport.GC is initialized at build-time to avoid including the rmi library,
- * which is not needed as it only implements the native maxObjectInspectionAge() method, which in
- * turn is {@link Target_sun_rmi_transport_GC#maxObjectInspectionAge substituted in here}.
- */
-@TargetClass(className = "sun.rmi.transport.GC")
-final class Target_sun_rmi_transport_GC {
-    @Alias @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Reset)//
-    private static Thread daemon = null;
+public class AMD64HotSpotFrameMapBuilder extends AMD64FrameMapBuilder {
+    public AMD64HotSpotFrameMapBuilder(FrameMap frameMap, CodeCacheProvider codeCache, RegisterConfig registerConfig) {
+        super(frameMap, codeCache, registerConfig);
+    }
 
-    @Substitute
-    public static long maxObjectInspectionAge() {
-        return Heap.getHeap().getMillisSinceLastWholeHeapExamined();
+    @Override
+    public AMD64HotSpotFrameMap getFrameMap() {
+        return (AMD64HotSpotFrameMap) super.getFrameMap();
+    }
+
+    /**
+     * For non-leaf methods, RBP is preserved in the special stack slot required by the HotSpot
+     * runtime for walking/inspecting frames of such methods.
+     */
+    public StackSlot getRBPSpillSlot() {
+        return getFrameMap().getRBPSpillSlot();
+    }
+
+    public StackSlot getDeoptimizationRescueSlot() {
+        return getFrameMap().getDeoptimizationRescueSlot();
     }
 }
