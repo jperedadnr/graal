@@ -22,15 +22,39 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package com.oracle.svm.core.jdk;
+package com.oracle.svm.core.util;
 
-import org.graalvm.compiler.serviceprovider.JavaVersionUtil;
+import org.graalvm.compiler.api.replacements.Fold;
+import org.graalvm.nativeimage.ImageSingletons;
+import org.graalvm.nativeimage.Platform;
+import org.graalvm.nativeimage.Platforms;
 
-import java.util.function.BooleanSupplier;
+import com.oracle.svm.core.log.Log;
 
-public class JDK20OrEarlier implements BooleanSupplier {
-    @Override
-    public boolean getAsBoolean() {
-        return JavaVersionUtil.JAVA_SPEC <= 20;
+public class CounterSupport {
+    private final Counter.Group[] enabledGroups;
+
+    @Platforms(Platform.HOSTED_ONLY.class)
+    CounterSupport(Counter.Group[] enabledGroups) {
+        this.enabledGroups = enabledGroups;
     }
+
+    @Fold
+    public static CounterSupport singleton() {
+        return ImageSingletons.lookup(CounterSupport.class);
+    }
+
+    /**
+     * Prints all counters of all enabled groups to the {@link Log}.
+     */
+    public void logValues(Log log) {
+        for (Counter.Group group : enabledGroups) {
+            group.logValues(log);
+        }
+    }
+
+    public boolean hasCounters() {
+        return enabledGroups != null && enabledGroups.length > 0;
+    }
+
 }
