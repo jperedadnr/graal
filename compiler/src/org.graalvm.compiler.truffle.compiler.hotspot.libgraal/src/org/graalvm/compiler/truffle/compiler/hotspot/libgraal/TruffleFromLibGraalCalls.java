@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,20 +22,23 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package com.oracle.svm.hosted.image;
+package org.graalvm.compiler.truffle.compiler.hotspot.libgraal;
 
-import java.nio.file.Path;
+import org.graalvm.libgraal.jni.FromLibGraalCalls;
+import org.graalvm.jniutils.JNI.JClass;
+import org.graalvm.jniutils.JNI.JNIEnv;
+import org.graalvm.compiler.truffle.common.hotspot.libgraal.TruffleFromLibGraal.Id;
 
-import org.graalvm.nativeimage.ImageSingletons;
-import org.graalvm.nativeimage.Platform;
+final class TruffleFromLibGraalCalls extends FromLibGraalCalls<Id> {
 
-import com.oracle.svm.hosted.code.CompileQueue;
+    static final TruffleFromLibGraalCalls INSTANCE = new TruffleFromLibGraalCalls();
 
-public abstract class NativeImageCodeCacheFactory {
+    private TruffleFromLibGraalCalls() {
+        super(Id.class);
+    }
 
-    public abstract NativeImageCodeCache newCodeCache(CompileQueue compileQueue, NativeImageHeap heap, Platform target, Path tempDir);
-
-    public static NativeImageCodeCacheFactory get() {
-        return ImageSingletons.lookup(NativeImageCodeCacheFactory.class);
+    @Override
+    protected JClass resolvePeer(JNIEnv env) {
+        return getJNIClass(env, "org.graalvm.compiler.truffle.runtime.hotspot.libgraal.TruffleFromLibGraalEntryPoints");
     }
 }
