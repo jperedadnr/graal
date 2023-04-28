@@ -133,6 +133,7 @@ import org.graalvm.compiler.nodes.extended.ObjectIsArrayNode;
 import org.graalvm.compiler.nodes.extended.OpaqueNode;
 import org.graalvm.compiler.nodes.extended.RawLoadNode;
 import org.graalvm.compiler.nodes.extended.RawStoreNode;
+import org.graalvm.compiler.nodes.extended.SwitchCaseProbabilityNode;
 import org.graalvm.compiler.nodes.extended.UnboxNode;
 import org.graalvm.compiler.nodes.extended.UnsafeMemoryLoadNode;
 import org.graalvm.compiler.nodes.extended.UnsafeMemoryStoreNode;
@@ -1811,6 +1812,13 @@ public class StandardGraphBuilderPlugins {
                 return false;
             }
         });
+        r.register(new RequiredInlineOnlyInvocationPlugin("injectSwitchCaseProbability", double.class) {
+            @Override
+            public boolean apply(GraphBuilderContext b, ResolvedJavaMethod targetMethod, Receiver receiver, ValueNode probability) {
+                b.add(new SwitchCaseProbabilityNode(probability));
+                return true;
+            }
+        });
 
         for (JavaKind kind : JavaKind.values()) {
             if ((kind.isPrimitive() && kind != JavaKind.Void) || kind == JavaKind.Object) {
@@ -2221,7 +2229,12 @@ public class StandardGraphBuilderPlugins {
                 ValueNode encryptedCounterAddr = readFieldArrayStart(b, helper, receiverType, "encryptedCounter", nonNullReceiver, JavaKind.Byte);
                 // Compute address of CounterModeCrypt.used field
                 ValueNode usedPtr = b.add(new ComputeObjectAddressNode(nonNullReceiver, helper.asWord(usedOffset)));
-                CounterModeAESNode counterModeAESNode = b.add(new CounterModeAESNode(inAddr, outAddr, kAddr, counterAddr, len, encryptedCounterAddr, usedPtr));
+                CounterModeAESNode counterModeAESNode = b.append(new CounterModeAESNode(inAddr, outAddr, kAddr, counterAddr, len, encryptedCounterAddr, usedPtr));
+                /*
+                 * readEmbeddedAESCryptKArrayStart has a fallback path, so the final return will
+                 * involve a merge with a valid frame state. We can use a placeholder state here.
+                 */
+                b.setStateAfterSkipVerification(counterModeAESNode);
                 helper.emitFinalReturn(JavaKind.Int, counterModeAESNode);
                 return true;
             } catch (ClassNotFoundException e) {
@@ -2254,7 +2267,12 @@ public class StandardGraphBuilderPlugins {
                 ValueNode kAddr = readEmbeddedAESCryptKArrayStart(b, helper, receiverType, typeAESCrypt, nonNullReceiver);
                 // Read CipherBlockChaining.r
                 ValueNode rAddr = readFieldArrayStart(b, helper, receiverType, "r", nonNullReceiver, JavaKind.Byte);
-                CipherBlockChainingAESNode call = b.add(new CipherBlockChainingAESNode(inAddr, outAddr, kAddr, rAddr, inLength, mode));
+                CipherBlockChainingAESNode call = b.append(new CipherBlockChainingAESNode(inAddr, outAddr, kAddr, rAddr, inLength, mode));
+                /*
+                 * readEmbeddedAESCryptKArrayStart has a fallback path, so the final return will
+                 * involve a merge with a valid frame state. We can use a placeholder state here.
+                 */
+                b.setStateAfterSkipVerification(call);
                 helper.emitFinalReturn(JavaKind.Int, call);
                 return true;
             } catch (ClassNotFoundException e) {
@@ -2317,8 +2335,16 @@ public class StandardGraphBuilderPlugins {
             @Override
             public boolean apply(GraphBuilderContext b, ResolvedJavaMethod targetMethod, Receiver receiver, ValueNode x, ValueNode len, ValueNode z, ValueNode zlen) {
                 try (InvocationPluginHelper helper = new InvocationPluginHelper(b, targetMethod)) {
-                    b.add(new BigIntegerSquareToLenNode(helper.arrayStart(x, JavaKind.Int), len, helper.arrayStart(z, JavaKind.Int), zlen));
+                    /*
+                     * The intrinsified method takes the z array as a parameter, performs
+                     * side-effects on its contents, then returns the same reference to z. Our
+                     * intrinsic only performs the side-effects, we set z as the result directly.
+                     * The stateAfter for the intrinsic should include this value on the stack, so
+                     * push it first and only compute the state afterwards.
+                     */
+                    BigIntegerSquareToLenNode squareToLen = b.append(new BigIntegerSquareToLenNode(helper.arrayStart(x, JavaKind.Int), len, helper.arrayStart(z, JavaKind.Int), zlen));
                     b.push(JavaKind.Object, z);
+                    b.setStateAfter(squareToLen);
                     return true;
                 }
             }
