@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,30 +22,20 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package com.oracle.svm.core.thread;
+package com.oracle.svm.hosted.image;
 
-import com.oracle.svm.core.annotate.Alias;
-import com.oracle.svm.core.annotate.TargetClass;
-import com.oracle.svm.core.annotate.TargetElement;
-import com.oracle.svm.core.jdk.JDK19OrLater;
-import com.oracle.svm.core.jdk.JDK20OrEarlier;
+import java.nio.file.Path;
 
-@TargetClass(ThreadLocal.class)
-@SuppressWarnings({"unused"})
-public final class Target_java_lang_ThreadLocal {
-    @Alias
-    static native Target_java_lang_ThreadLocal_ThreadLocalMap createInheritedMap(Target_java_lang_ThreadLocal_ThreadLocalMap parentMap);
-}
+import org.graalvm.nativeimage.ImageSingletons;
 
-@TargetClass(value = ThreadLocal.class, innerClass = "ThreadLocalMap")
-@SuppressWarnings({"unused"})
-final class Target_java_lang_ThreadLocal_ThreadLocalMap {
-    // Checkstyle: stop
-    @Alias @TargetElement(onlyWith = {JDK19OrLater.class, JDK20OrEarlier.class}) //
-    static Target_java_lang_ThreadLocal_ThreadLocalMap NOT_SUPPORTED;
-    // Checkstyle: resume
+import com.oracle.graal.pointsto.BigBang;
+import com.oracle.objectfile.ObjectFile;
 
-    @Alias
-    @TargetElement(onlyWith = JDK19OrLater.class)
-    native int size();
+public interface ObjectFileFactory {
+
+    ObjectFile newObjectFile(int pageSize, Path tempDir, BigBang bb);
+
+    static ObjectFileFactory singleton() {
+        return ImageSingletons.lookup(ObjectFileFactory.class);
+    }
 }

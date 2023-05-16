@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,30 +22,31 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package com.oracle.svm.core.thread;
+package com.oracle.svm.core.graal.llvm.objectfile;
 
-import com.oracle.svm.core.annotate.Alias;
-import com.oracle.svm.core.annotate.TargetClass;
-import com.oracle.svm.core.annotate.TargetElement;
-import com.oracle.svm.core.jdk.JDK19OrLater;
-import com.oracle.svm.core.jdk.JDK20OrEarlier;
+import java.nio.ByteBuffer;
 
-@TargetClass(ThreadLocal.class)
-@SuppressWarnings({"unused"})
-public final class Target_java_lang_ThreadLocal {
-    @Alias
-    static native Target_java_lang_ThreadLocal_ThreadLocalMap createInheritedMap(Target_java_lang_ThreadLocal_ThreadLocalMap parentMap);
-}
+import com.oracle.objectfile.ObjectFile;
+import com.oracle.objectfile.ObjectFile.ProgbitsSectionImpl;
 
-@TargetClass(value = ThreadLocal.class, innerClass = "ThreadLocalMap")
-@SuppressWarnings({"unused"})
-final class Target_java_lang_ThreadLocal_ThreadLocalMap {
-    // Checkstyle: stop
-    @Alias @TargetElement(onlyWith = {JDK19OrLater.class, JDK20OrEarlier.class}) //
-    static Target_java_lang_ThreadLocal_ThreadLocalMap NOT_SUPPORTED;
-    // Checkstyle: resume
+public class LLVMRegularSection extends LLVMUserDefinedSection implements ProgbitsSectionImpl {
 
-    @Alias
-    @TargetElement(onlyWith = JDK19OrLater.class)
-    native int size();
+    public LLVMRegularSection(LLVMObjectFile owner, String name, int alignment, ProgbitsSectionImpl impl) {
+        super(owner, name, alignment, impl);
+    }
+
+    @Override
+    public byte[] getContent() {
+        return ((ProgbitsSectionImpl) impl).getContent();
+    }
+
+    @Override
+    public void setContent(byte[] c) {
+        ((ProgbitsSectionImpl) impl).setContent(c);
+    }
+
+    @Override
+    public void markRelocationSite(int offset, ObjectFile.RelocationKind k, String symbolName, long addend) {
+        markRelocationSite(offset, ByteBuffer.wrap(getContent()).order(getOwner().getByteOrder()), k, symbolName, addend);
+    }
 }
