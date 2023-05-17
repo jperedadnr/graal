@@ -69,7 +69,6 @@ import com.oracle.svm.core.image.ImageHeapLayouter;
 import com.oracle.svm.core.image.ImageHeapObject;
 import com.oracle.svm.core.image.ImageHeapPartition;
 import com.oracle.svm.core.jdk.StringInternSupport;
-import com.oracle.svm.core.meta.SubstrateObjectConstant;
 import com.oracle.svm.core.util.HostedStringDeduplication;
 import com.oracle.svm.core.util.UserError;
 import com.oracle.svm.core.util.VMError;
@@ -161,7 +160,7 @@ public final class NativeImageHeap implements ImageHeap {
     }
 
     public ObjectInfo getConstantInfo(JavaConstant constant) {
-        return objects.get(maybeUnwrapString(uncompress(constant)));
+        return objects.get(maybeUnwrap(uncompress(constant)));
     }
 
     protected HostedUniverse getUniverse() {
@@ -317,14 +316,22 @@ public final class NativeImageHeap implements ImageHeap {
             }
         }
 
-        JavaConstant uncompressed = maybeUnwrapString(uncompress(constant));
+        JavaConstant uncompressed = maybeUnwrap(uncompress(constant));
 
         int identityHashCode = computeIdentityHashCode(uncompressed);
         VMError.guarantee(identityHashCode != 0, "0 is used as a marker value for 'hash code not yet computed'");
 
-        String stringConstant = universe.getSnippetReflection().asObject(String.class, uncompressed);
-        if (stringConstant != null) {
+        Object objectConstant = universe.getSnippetReflection().asObject(Object.class, uncompressed);
+        if (objectConstant instanceof String stringConstant) {
             handleImageString(stringConstant);
+        } else if (objectConstant instanceof Enum<?> enumConstant) {
+            /*
+             * Starting with JDK 21, Enum caches the identity hash code in a separate hash field. We
+             * want to allow Enum values to be manually marked as immutable objects, so we eagerly
+             * initialize the hash field. This is safe because Enum.hashCode() is a final method,
+             * i.e., cannot be overwritten by the user.
+             */
+            forceHashCodeComputation(enumConstant);
         }
 
         final ObjectInfo existing = objects.get(uncompressed);
@@ -336,17 +343,14 @@ public final class NativeImageHeap implements ImageHeap {
     }
 
     /**
-     * When a String is represented as an {@link ImageHeapConstant} we unwrap it before using it as
+     * When an object is represented as an {@link ImageHeapConstant} we unwrap it before using it as
      * a key for {@link NativeImageHeap#objects}. This is necessary to avoid duplication of
-     * {@link ObjectInfo} for the same String object which can happen when processing the
-     * {@link NativeImageHeap#internedStrings} since the String objects are stored raw and wrapped
-     * as a {@link SubstrateObjectConstant} when processed. Eventually, the constant representation
-     * of raw String objects will be extracted from the shadow heap, so it will always be
-     * {@link ImageHeapConstant} and this will be removed.
+     * {@link ObjectInfo} for the same object. Eventually, there will be a complete shadow heap with
+     * only {@link ImageHeapConstant} and this code will be removed.
      */
-    private JavaConstant maybeUnwrapString(JavaConstant constant) {
-        if (metaAccess.isInstanceOf(constant, String.class) && constant instanceof ImageHeapConstant ihc && ihc.getHostedObject() != null) {
-            return ihc.getHostedObject();
+    private static JavaConstant maybeUnwrap(JavaConstant constant) {
+        if (constant instanceof ImageHeapConstant ihc && ihc.getHostedObject() != null) {
+            return uncompress(ihc.getHostedObject());
         }
         return constant;
     }
@@ -432,11 +436,12 @@ public final class NativeImageHeap implements ImageHeap {
     }
 
     /**
-     * For immutable Strings in the native image heap, force eager computation of the hash field.
+     * For immutable Strings and other objects in the native image heap, force eager computation of
+     * the hash field.
      */
     @SuppressFBWarnings(value = "RV_RETURN_VALUE_IGNORED", justification = "eager hash field computation")
-    private static void forceHashCodeComputation(final String str) {
-        str.hashCode();
+    private static void forceHashCodeComputation(Object object) {
+        object.hashCode();
     }
 
     /**
@@ -630,7 +635,7 @@ public final class NativeImageHeap implements ImageHeap {
     }
 
     private ObjectInfo addToImageHeap(JavaConstant add, HostedClass clazz, long size, int identityHashCode, Object reason) {
-        JavaConstant constant = maybeUnwrapString(add);
+        JavaConstant constant = maybeUnwrap(add);
         ObjectInfo info = new ObjectInfo(constant, size, clazz, identityHashCode, reason);
         assert !objects.containsKey(constant) && !isCompressed(constant);
         objects.put(constant, info);
