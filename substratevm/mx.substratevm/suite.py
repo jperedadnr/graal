@@ -601,7 +601,7 @@ suite = {
                 "compiler:GRAAL_PROCESSOR",
             ],
             "workingSets": "SVM",
-            "jacoco" : "include",
+            "jacoco" : "exclude", # experimental code not used in production
         },
 
         "com.oracle.svm.hosted": {
@@ -678,6 +678,9 @@ suite = {
             ],
             "workingSets": "SVM",
             "jacoco" : "include",
+            "jacocoExcludePackage": [
+                "com.oracle.svm.hosted.dashboard",
+            ],
         },
 
         # Native libraries below explicitly set _FORTIFY_SOURCE to 0. This constant controls how glibc handles some
@@ -958,7 +961,11 @@ suite = {
                 "compiler:GRAAL_PROCESSOR",
                 "SVM_PROCESSOR",
             ],
-            "jacoco" : "exclude",
+            "jacoco" : "include",
+            "jacocoExcludePackages": [
+                "com.oracle.svm.graal.meta",
+                "com.oracle.svm.graal.substitutions",
+            ],
         },
 
         "com.oracle.svm.graal.test": {
@@ -1331,6 +1338,7 @@ suite = {
                 "POINTSTO",
                 "compiler:GRAAL",
                 "NATIVE_IMAGE_BASE",
+                "truffle:TRUFFLE_API",
             ],
             "moduleInfo" : {
                 "name" : "org.graalvm.nativeimage.builder",
@@ -1365,9 +1373,13 @@ suite = {
                     "org.graalvm.compiler.options.OptionDescriptors",
                     "com.oracle.truffle.api.TruffleLanguage.Provider",
                     "com.oracle.truffle.api.instrumentation.TruffleInstrument.Provider",
+                    "com.oracle.truffle.api.provider.TruffleLanguageProvider",
+                    "com.oracle.truffle.api.instrumentation.provider.TruffleInstrumentProvider",
                     "com.oracle.svm.hosted.NativeImageClassLoaderPostProcessing",
                     "java.util.spi.ResourceBundleControlProvider",
                     "com.oracle.svm.core.feature.AutomaticallyRegisteredFeatureServiceRegistration",
+                    "com.oracle.truffle.api.TruffleLanguage.Provider",    # Deprecated
+                    "com.oracle.truffle.api.instrumentation.TruffleInstrument.Provider", # Deprecated
                 ],
                 "requiresConcealed": {
                     "jdk.internal.vm.ci": [
