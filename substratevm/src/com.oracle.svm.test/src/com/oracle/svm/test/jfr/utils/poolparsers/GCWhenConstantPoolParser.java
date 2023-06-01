@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,18 +22,28 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package com.oracle.svm.core.jdk;
 
-import com.oracle.svm.core.annotate.Substitute;
-import com.oracle.svm.core.annotate.TargetClass;
+package com.oracle.svm.test.jfr.utils.poolparsers;
 
-@SuppressWarnings("unused")
-@TargetClass(value = java.lang.ModuleLayer.class)
-final class Target_java_lang_ModuleLayer {
+import java.io.IOException;
 
-    @SuppressWarnings("unused")
-    @Substitute
-    public static ModuleLayer boot() {
-        return RuntimeModuleSupport.instance().getBootLayer();
+import org.junit.Assert;
+
+import com.oracle.svm.test.jfr.utils.JfrFileParser;
+import com.oracle.svm.test.jfr.utils.RecordingInput;
+
+public class GCWhenConstantPoolParser extends AbstractSerializerParser {
+    public GCWhenConstantPoolParser(JfrFileParser parser) {
+        super(parser);
+    }
+
+    @Override
+    public void parse(RecordingInput input) throws IOException {
+        int count = input.readInt();
+        Assert.assertTrue(count > 0);
+        for (int i = 0; i < count; i++) {
+            addFoundId(input.readInt()); // Id.
+            Assert.assertFalse("GCWhen text is empty!", input.readUTF().isEmpty());
+        }
     }
 }

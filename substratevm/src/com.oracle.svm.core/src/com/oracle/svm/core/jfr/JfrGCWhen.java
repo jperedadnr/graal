@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,18 +22,27 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package com.oracle.svm.core.jdk;
+package com.oracle.svm.core.jfr;
 
-import com.oracle.svm.core.annotate.Substitute;
-import com.oracle.svm.core.annotate.TargetClass;
+import com.oracle.svm.core.Uninterruptible;
 
-@SuppressWarnings("unused")
-@TargetClass(value = java.lang.ModuleLayer.class)
-final class Target_java_lang_ModuleLayer {
+public enum JfrGCWhen {
+    BEFORE_GC("Before GC"),
+    AFTER_GC("After GC");
 
-    @SuppressWarnings("unused")
-    @Substitute
-    public static ModuleLayer boot() {
-        return RuntimeModuleSupport.instance().getBootLayer();
+    private final String text;
+
+    JfrGCWhen(String text) {
+        this.text = text;
+    }
+
+    public String getText() {
+        return this.text;
+    }
+
+    @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
+    public long getId() {
+        // First entry needs to have id 0.
+        return ordinal();
     }
 }
