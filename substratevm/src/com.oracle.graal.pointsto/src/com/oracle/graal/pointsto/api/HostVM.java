@@ -50,10 +50,12 @@ import com.oracle.graal.pointsto.BigBang;
 import com.oracle.graal.pointsto.PointsToAnalysis;
 import com.oracle.graal.pointsto.flow.InvokeTypeFlow;
 import com.oracle.graal.pointsto.infrastructure.UniverseMetaAccess;
+import com.oracle.graal.pointsto.meta.AnalysisField;
 import com.oracle.graal.pointsto.meta.AnalysisMethod;
 import com.oracle.graal.pointsto.meta.AnalysisType;
 import com.oracle.graal.pointsto.meta.AnalysisUniverse;
 import com.oracle.graal.pointsto.meta.HostedProviders;
+import com.oracle.graal.pointsto.phases.InlineBeforeAnalysisGraphDecoder;
 import com.oracle.graal.pointsto.phases.InlineBeforeAnalysisPolicy;
 import com.oracle.graal.pointsto.util.AnalysisError;
 import com.oracle.svm.common.meta.MultiMethod;
@@ -220,10 +222,9 @@ public abstract class HostVM {
         return true;
     }
 
-    @SuppressWarnings("unused")
-    public InlineBeforeAnalysisPolicy<?> inlineBeforeAnalysisPolicy(MultiMethod.MultiMethodKey multiMethodKey) {
+    public InlineBeforeAnalysisGraphDecoder<?> createInlineBeforeAnalysisGraphDecoder(BigBang bb, AnalysisMethod method, StructuredGraph resultGraph) {
         /* No inlining by the static analysis unless explicitly overwritten by the VM. */
-        return InlineBeforeAnalysisPolicy.NO_INLINING;
+        return new InlineBeforeAnalysisGraphDecoder<>(bb, InlineBeforeAnalysisPolicy.NO_INLINING, resultGraph, bb.getProviders(method), null);
     }
 
     @SuppressWarnings("unused")
@@ -375,6 +376,10 @@ public abstract class HostVM {
     }
 
     public boolean ignoreInstanceOfTypeDisallowed() {
+        return false;
+    }
+
+    public boolean isUnknownValueField(@SuppressWarnings("unused") AnalysisField field) {
         return false;
     }
 }

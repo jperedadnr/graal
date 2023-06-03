@@ -83,6 +83,7 @@ import com.oracle.graal.pointsto.meta.AnalysisMethod;
 import com.oracle.graal.pointsto.meta.AnalysisType;
 import com.oracle.graal.pointsto.meta.AnalysisUniverse;
 import com.oracle.graal.pointsto.meta.HostedProviders;
+import com.oracle.graal.pointsto.phases.InlineBeforeAnalysisGraphDecoder;
 import com.oracle.graal.pointsto.phases.InlineBeforeAnalysisPolicy;
 import com.oracle.graal.pointsto.util.GraalAccess;
 import com.oracle.svm.common.meta.MultiMethod;
@@ -472,12 +473,9 @@ public class SVMHost extends HostVM {
         return resolvedJavaType.getAnnotation(UnknownClass.class) != null;
     }
 
-    public static boolean isUnknownObjectField(ResolvedJavaField resolvedJavaField) {
-        return resolvedJavaField.getAnnotation(UnknownObjectField.class) != null;
-    }
-
-    public static boolean isUnknownPrimitiveField(AnalysisField field) {
-        return field.getAnnotation(UnknownPrimitiveField.class) != null;
+    @Override
+    public boolean isUnknownValueField(AnalysisField field) {
+        return field.getAnnotation(UnknownPrimitiveField.class) != null || field.getAnnotation(UnknownObjectField.class) != null;
     }
 
     public ClassInitializationSupport getClassInitializationSupport() {
@@ -728,8 +726,7 @@ public class SVMHost extends HostVM {
     @SuppressWarnings("this-escape")//
     private final InlineBeforeAnalysisPolicy<?> inlineBeforeAnalysisPolicy = new InlineBeforeAnalysisPolicyImpl(this);
 
-    @Override
-    public InlineBeforeAnalysisPolicy<?> inlineBeforeAnalysisPolicy(MultiMethod.MultiMethodKey multiMethodKey) {
+    protected InlineBeforeAnalysisPolicy<?> inlineBeforeAnalysisPolicy(MultiMethod.MultiMethodKey multiMethodKey) {
         /*
          * Currently we only allow inlining before analysis in the original methods.
          */
@@ -738,6 +735,11 @@ public class SVMHost extends HostVM {
         } else {
             return InlineBeforeAnalysisPolicy.NO_INLINING;
         }
+    }
+
+    @Override
+    public InlineBeforeAnalysisGraphDecoder<?> createInlineBeforeAnalysisGraphDecoder(BigBang bb, AnalysisMethod method, StructuredGraph resultGraph) {
+        return new InlineBeforeAnalysisGraphDecoder<>(bb, inlineBeforeAnalysisPolicy(method.getMultiMethodKey()), resultGraph, bb.getProviders(method), null);
     }
 
     public static class Options {
