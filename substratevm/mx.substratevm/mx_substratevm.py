@@ -55,6 +55,7 @@ from mx_unittest import _run_tests, _VMLauncher
 
 import sys
 
+
 if sys.version_info[0] < 3:
     from StringIO import StringIO
 else:
@@ -730,13 +731,54 @@ def _cinterfacetutorial(native_image, args=None):
     mx.run([join(build_dir, 'cinterfacetutorial')])
 
 
-def _helloworld(native_image, javac_command, path, build_only, args):
+_helloworld_variants = {
+    'traditional': '''
+public class HelloWorld {
+    public static void main(String[] args) {
+        System.out.println(System.getenv("%s"));
+    }
+}
+''',
+    'noArgs': '''
+// requires JDK 21 and --enable-preview
+public class HelloWorld {
+    static void main() {
+        System.out.println(System.getenv("%s"));
+    }
+}
+''',
+    'instance': '''
+// requires JDK 21 and --enable-preview
+class HelloWorld {
+    void main(String[] args) {
+        System.out.println(System.getenv("%s"));
+    }
+}
+''',
+    'instanceNoArgs': '''
+// requires JDK 21 and --enable-preview
+class HelloWorld {
+    void main() {
+        System.out.println(System.getenv("%s"));
+    }
+}
+''',
+    'unnamedClass': '''
+// requires JDK 21 and javac --enable-preview --source 21 and native-image --enable-preview
+void main() {
+    System.out.println(System.getenv("%s"));
+}
+''',
+}
+
+
+def _helloworld(native_image, javac_command, path, build_only, args, variant=list(_helloworld_variants.keys())[0]):
     mkpath(path)
     hello_file = os.path.join(path, 'HelloWorld.java')
     envkey = 'HELLO_WORLD_MESSAGE'
     output = 'Hello from native-image!'
     with open(hello_file, 'w') as fp:
-        fp.write('public class HelloWorld { public static void main(String[] args) { System.out.println(System.getenv("' + envkey + '")); } }')
+        fp.write(_helloworld_variants[variant] % envkey)
         fp.flush()
     mx.run(javac_command + [hello_file])
 
@@ -796,7 +838,9 @@ def _debuginfotest(native_image, path, build_only, with_isolates_only, args):
     mx.log("sourcepath=%s"%sourcepath)
     sourcecache = join(path, 'sources')
     mx.log("sourcecache=%s"%sourcecache)
-
+    # the header file for foreign types resides at the root of the
+    # com.oracle.svm.test source tree
+    cincludepath = sourcepath
     javaProperties = {}
     for dist in suite.dists:
         if isinstance(dist, mx.ClasspathDependency):
@@ -807,23 +851,26 @@ def _debuginfotest(native_image, path, build_only, with_isolates_only, args):
     for key, value in javaProperties.items():
         args.append("-D" + key + "=" + value)
 
+    # set property controlling inclusion of foreign struct header
+    args.append("-DbuildDebugInfoTestExample=true")
 
-    native_image_args = ["--native-image-info",
-                         '-H:+VerifyNamingConventions',
-                         '-cp', classpath('com.oracle.svm.test'),
-                         '-Dgraal.LogFile=graal.log',
-                         '-g',
-                         '-H:+SourceLevelDebug',
-                         '-H:DebugInfoSourceSearchPath=' + sourcepath,
-                         # We do not want to step into class initializer, so initialize everything at build time.
-                         '--initialize-at-build-time=hello',
-                         'hello.Hello'] + args
+    native_image_args = [
+        '--native-compiler-options=-I' + cincludepath,
+        '-H:CLibraryPath=' + sourcepath,
+        '--native-image-info',
+        '-H:+VerifyNamingConventions',
+        '-cp', classpath('com.oracle.svm.test'),
+        '-Dgraal.LogFile=graal.log',
+        '-g',
+        '-H:+SourceLevelDebug',
+        '-H:DebugInfoSourceSearchPath=' + sourcepath,
+    ] + args
 
-    def build_debug_test(variant_name, extra_args):
+    def build_debug_test(variant_name, image_name, extra_args):
         per_build_path = join(path, variant_name)
         mkpath(per_build_path)
         build_args = native_image_args + extra_args + [
-            '-o', join(per_build_path, 'hello_image')
+            '-o', join(per_build_path, image_name)
         ]
         mx.log('native_image {}'.format(build_args))
         return native_image(build_args)
@@ -832,20 +879,26 @@ def _debuginfotest(native_image, path, build_only, with_isolates_only, args):
     if '--libc=musl' in args:
         os.environ.update({'debuginfotest_musl' : 'yes'})
 
+    gdb_utils_py = join(suite.dir, 'mx.substratevm', 'gdb_utils.py')
     testhello_py = join(suite.dir, 'mx.substratevm', 'testhello.py')
-
-    hello_binary = build_debug_test('isolates_on', ['-H:+SpawnIsolates'])
+    testhello_args = [
+        # We do not want to step into class initializer, so initialize everything at build time.
+        '--initialize-at-build-time=hello',
+        'hello.Hello'
+    ]
     if mx.get_os() == 'linux' and not build_only:
         os.environ.update({'debuginfotest_arch' : mx.get_arch()})
-    if mx.get_os() == 'linux' and not build_only:
-        os.environ.update({'debuginfotest_isolates' : 'yes'})
-        mx.run([os.environ.get('GDB_BIN', 'gdb'), '-ex', 'python "ISOLATES=True"', '-x', testhello_py, hello_binary])
 
     if not with_isolates_only:
-        hello_binary = build_debug_test('isolates_off', ['-H:-SpawnIsolates'])
+        hello_binary = build_debug_test('isolates_off', 'hello_image', testhello_args + ['-H:-SpawnIsolates'])
         if mx.get_os() == 'linux' and not build_only:
             os.environ.update({'debuginfotest_isolates' : 'no'})
-            mx.run([os.environ.get('GDB_BIN', 'gdb'), '-ex', 'python "ISOLATES=False"', '-x', testhello_py, hello_binary])
+            mx.run([os.environ.get('GDB_BIN', 'gdb'), '-ex', 'python "ISOLATES=False"', '-x', gdb_utils_py, '-x', testhello_py, hello_binary])
+
+    hello_binary = build_debug_test('isolates_on', 'hello_image', testhello_args + ['-H:+SpawnIsolates'])
+    if mx.get_os() == 'linux' and not build_only:
+        os.environ.update({'debuginfotest_isolates' : 'yes'})
+        mx.run([os.environ.get('GDB_BIN', 'gdb'), '-ex', 'python "ISOLATES=True"', '-x', gdb_utils_py, '-x', testhello_py, hello_binary])
 
 def _javac_image(native_image, path, args=None):
     args = [] if args is None else args
@@ -1227,20 +1280,26 @@ mx_sdk_vm.register_graalvm_component(mx_sdk_vm.GraalVmJreComponent(
 
 def run_helloworld_command(args, config, command_name):
     parser = ArgumentParser(prog='mx ' + command_name)
-    all_args = ['--output-path', '--javac-command', '--build-only']
+    all_args = ['--output-path', '--javac-command', '--build-only', '--variant', '--list']
     masked_args = [_mask(arg, all_args) for arg in args]
+    default_variant = list(_helloworld_variants.keys())[0]
     parser.add_argument(all_args[0], metavar='<output-path>', nargs=1, help='Path of the generated image', default=[svmbuild_dir(suite)])
     parser.add_argument(all_args[1], metavar='<javac-command>', help='A javac command to be used', default=mx.get_jdk().javac)
     parser.add_argument(all_args[2], action='store_true', help='Only build the native image')
+    parser.add_argument(all_args[3], choices=_helloworld_variants.keys(), default=default_variant, help=f'The Hello World source code variant to use (default: {default_variant})')
+    parser.add_argument(all_args[4], action='store_true', help='Print the Hello World source and exit')
     parser.add_argument('image_args', nargs='*', default=[])
     parsed = parser.parse_args(masked_args)
     javac_command = unmask(parsed.javac_command.split())
     output_path = unmask(parsed.output_path)[0]
     build_only = parsed.build_only
     image_args = unmask(parsed.image_args)
+    if parsed.list:
+        mx.log(_helloworld_variants[parsed.variant])
+        return
     native_image_context_run(
         lambda native_image, a:
-        _helloworld(native_image, javac_command, output_path, build_only, a), unmask(image_args),
+        _helloworld(native_image, javac_command, output_path, build_only, a, variant=parsed.variant), unmask(image_args),
         config=config,
     )
 

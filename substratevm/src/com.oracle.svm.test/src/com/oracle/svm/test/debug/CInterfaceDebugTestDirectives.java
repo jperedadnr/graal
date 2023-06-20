@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,27 +23,21 @@
  * questions.
  */
 
-package com.oracle.svm.core.jdk;
+package com.oracle.svm.test.debug;
 
-import java.util.function.BooleanSupplier;
+import java.util.List;
 
-public final class NashornSupport {
+import org.graalvm.nativeimage.c.CContext;
 
-    // Determine if the jdk.scripting.nashorn module (or jar) is available. If it's not,
-    // the boolean supplier should return false.
-    static class NashornAvailable implements BooleanSupplier {
+public class CInterfaceDebugTestDirectives implements CContext.Directives {
 
-        private static final String CLASSFILTER_NAME = "jdk.nashorn.api.scripting.ClassFilter";
+    @Override
+    public boolean isInConfiguration() {
+        return "true".equals(System.getProperty("buildDebugInfoTestExample"));
+    }
 
-        @Override
-        public boolean getAsBoolean() {
-            try {
-                Class.forName(CLASSFILTER_NAME);
-                return true;
-            } catch (ClassNotFoundException e) {
-                return false;
-            }
-        }
-
+    @Override
+    public List<String> getHeaderFiles() {
+        return List.of("<systemjava_debugtest.h>");
     }
 }
