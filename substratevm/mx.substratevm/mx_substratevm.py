@@ -170,7 +170,7 @@ def _run_graalvm_cmd(cmd_args, config, nonZeroIsFatal=True, out=None, err=None, 
         components = mx_sdk_vm_impl._components_include_list()
         if components:
             config_args += ['--components=' + ','.join(c.name for c in components)]
-        dynamic_imports = [x for x, _ in mx.get_dynamic_imports()]
+        dynamic_imports = [('/' if subdir else '') + di for di, subdir in mx.get_dynamic_imports()]
         if dynamic_imports:
             config_args += ['--dynamicimports=' + ','.join(dynamic_imports)]
         primary_suite_dir = None
@@ -425,7 +425,7 @@ def svm_gate_body(args, tasks):
 
             json_and_schema_file_pairs = [
                 ('build-artifacts.json', 'build-artifacts-schema-v0.9.0.json'),
-                ('build-output.json', 'build-output-schema-v0.9.1.json'),
+                ('build-output.json', 'build-output-schema-v0.9.2.json'),
             ]
 
             build_output_file = join(svmbuild_dir(), 'build-output.json')
