@@ -1029,6 +1029,7 @@ class ShadedLibraryBuildTask(mx.JavaBuildTask):
                             ] + [
                                 sub for orig, shad in dist.shaded_package_paths().items() for sub in [
                                     (re.compile(r'(?<=")' + re.escape(orig) + r'(?=/[\w./]+")'), shad),
+                                    (re.compile(r'(?<="/)' + re.escape(orig) + r'(?=/[\w./]+")'), shad),
                                 ]
                             ]
 
@@ -1144,7 +1145,10 @@ mx_sdk_vm.register_graalvm_component(mx_sdk_vm.GraalVmJreComponent(
     jar_distributions=[],
     jvmci_parent_jars=[
         'truffle:TRUFFLE_API',
+        'truffle:TRUFFLE_COMPILER',
+        'truffle:TRUFFLE_RUNTIME',
     ],
+    support_libraries_distributions=['truffle:TRUFFLE_RUNTIME_ATTACH_SUPPORT'],
     stability="supported",
 ))
 
