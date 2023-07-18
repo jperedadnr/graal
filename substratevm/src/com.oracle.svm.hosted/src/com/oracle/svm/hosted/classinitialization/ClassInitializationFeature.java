@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -39,6 +39,7 @@ import java.util.stream.Collectors;
 
 import org.graalvm.collections.Pair;
 import org.graalvm.compiler.graph.Node;
+import org.graalvm.compiler.java.LambdaUtils;
 import org.graalvm.compiler.options.OptionValues;
 import org.graalvm.compiler.phases.util.Providers;
 import org.graalvm.nativeimage.impl.clinit.ClassInitializationTracking;
@@ -113,7 +114,6 @@ public class ClassInitializationFeature implements InternalFeature {
     public void duringSetup(DuringSetupAccess a) {
         FeatureImpl.DuringSetupAccessImpl access = (FeatureImpl.DuringSetupAccessImpl) a;
         classInitializationSupport = access.getHostVM().getClassInitializationSupport();
-        classInitializationSupport.setUnsupportedFeatures(access.getBigBang().getUnsupportedFeatures());
         access.registerObjectReplacer(this::checkImageHeapInstance);
         universe = ((FeatureImpl.DuringSetupAccessImpl) a).getBigBang().getUniverse();
         metaAccess = ((FeatureImpl.DuringSetupAccessImpl) a).getBigBang().getMetaAccess();
@@ -175,8 +175,6 @@ public class ClassInitializationFeature implements InternalFeature {
     public void afterAnalysis(AfterAnalysisAccess a) {
         AfterAnalysisAccessImpl access = (AfterAnalysisAccessImpl) a;
         try (Timer.StopTimer ignored = TimerCollection.createTimerAndStart(TimerCollection.Registry.CLINIT)) {
-            classInitializationSupport.setUnsupportedFeatures(null);
-
             assert classInitializationSupport.checkDelayedInitialization();
 
             if (SimulateClassInitializerSupport.singleton().isEnabled()) {
@@ -207,6 +205,7 @@ public class ClassInitializationFeature implements InternalFeature {
                                 .filter(c -> c.getClassLoader() != null && c.getClassLoader() != ClassLoader.getPlatformClassLoader())
                                 .filter(c -> classInitializationSupport.specifiedInitKindFor(c) == null)
                                 .map(Class::getTypeName)
+                                .filter(name -> !LambdaUtils.isLambdaName(name))
                                 .collect(Collectors.toList());
                 if (!unspecifiedClasses.isEmpty()) {
                     System.err.println("The following classes have unspecified initialization policy:" + System.lineSeparator() + String.join(System.lineSeparator(), unspecifiedClasses));
