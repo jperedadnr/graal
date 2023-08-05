@@ -22,33 +22,28 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package com.oracle.svm.core.heapdump;
+package com.oracle.svm.hosted.image;
 
-import java.io.FileOutputStream;
+import org.graalvm.compiler.api.replacements.SnippetReflectionProvider;
+import org.graalvm.nativeimage.Platform;
+import org.graalvm.nativeimage.Platforms;
 
-import com.oracle.svm.core.heap.dump.HeapDumping;
+import com.oracle.svm.core.Uninterruptible;
+import com.oracle.svm.core.code.InstantReferenceAdjuster;
 
-/* Legacy implementation, only used by other legacy code (see GR-44538). */
-public class HeapDumpSupportImpl extends HeapDumping {
-    @Override
-    public void initializeDumpHeapOnOutOfMemoryError() {
-        /* Nothing to do. */
+import jdk.vm.ci.meta.JavaConstant;
+
+public class HostedInstantReferenceAdjuster extends InstantReferenceAdjuster {
+    private final SnippetReflectionProvider snippetReflection;
+
+    public HostedInstantReferenceAdjuster(SnippetReflectionProvider snippetReflection) {
+        this.snippetReflection = snippetReflection;
     }
 
     @Override
-    public void teardownDumpHeapOnOutOfMemoryError() {
-        /* Nothing to do. */
-    }
-
-    @Override
-    public void dumpHeapOnOutOfMemoryError() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void dumpHeap(String outputFile, boolean live) throws java.io.IOException {
-        try (FileOutputStream fileOutputStream = new FileOutputStream(outputFile)) {
-            com.oracle.svm.core.heapdump.HeapDumpWriter.singleton().writeHeapTo(fileOutputStream, live);
-        }
+    @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
+    @Platforms(Platform.HOSTED_ONLY.class)
+    protected Object getObject(JavaConstant constant) {
+        return snippetReflection.asObject(Object.class, constant);
     }
 }
