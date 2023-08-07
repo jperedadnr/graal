@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,19 +22,29 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package com.oracle.svm.hosted;
+package org.graalvm.compiler.lir.amd64;
 
-import com.oracle.svm.core.feature.AutomaticallyRegisteredFeature;
-import com.oracle.svm.core.feature.InternalFeature;
-import com.oracle.svm.hosted.FeatureImpl.BeforeAnalysisAccessImpl;
+import org.graalvm.compiler.asm.amd64.AMD64MacroAssembler;
+import org.graalvm.compiler.lir.LIRInstruction;
+import org.graalvm.compiler.lir.LIRInstructionClass;
+import org.graalvm.compiler.lir.Opcode;
+import org.graalvm.compiler.lir.asm.CompilationResultBuilder;
 
-@AutomaticallyRegisteredFeature
-public class ClassNewInstanceFeature implements InternalFeature {
+@Opcode("ENDBR64")
+public final class EndbranchOp extends AMD64LIRInstruction {
+    public static final LIRInstructionClass<EndbranchOp> TYPE = LIRInstructionClass.create(EndbranchOp.class);
+
+    private EndbranchOp() {
+        super(TYPE);
+    }
 
     @Override
-    public void beforeAnalysis(BeforeAnalysisAccess a) {
-        BeforeAnalysisAccessImpl access = (BeforeAnalysisAccessImpl) a;
-        access.registerAsRoot(Object.class.getDeclaredConstructors()[0], true, "Runtime support, registered in " + ClassNewInstanceFeature.class);
+    public void emitCode(CompilationResultBuilder crb, AMD64MacroAssembler masm) {
+        masm.endbranch();
+    }
+
+    public static LIRInstruction create() {
+        return new EndbranchOp();
     }
 
 }
