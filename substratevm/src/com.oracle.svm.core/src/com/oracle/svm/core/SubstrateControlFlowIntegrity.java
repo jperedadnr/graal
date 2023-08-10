@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,32 +22,15 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package com.oracle.svm.core.jfr;
+package com.oracle.svm.core;
 
-import com.oracle.svm.core.annotate.Alias;
-import com.oracle.svm.core.annotate.TargetClass;
-import com.oracle.svm.core.annotate.TargetElement;
-import com.oracle.svm.core.jdk.JDK17OrEarlier;
-import com.oracle.svm.core.jdk.JDK19OrLater;
+import org.graalvm.compiler.api.replacements.Fold;
+import org.graalvm.nativeimage.ImageSingletons;
 
-@TargetClass(className = "EventWriter", classNameProvider = Package_jdk_jfr_internal_event_helper.class, onlyWith = HasJfrSupport.class)
-public final class Target_jdk_jfr_internal_EventWriter {
+public interface SubstrateControlFlowIntegrity {
 
-    @Alias //
-    @TargetElement(onlyWith = JDK19OrLater.class) boolean excluded;
-
-    @Alias //
-    long threadID;
-
-    @Alias
-    @SuppressWarnings("unused")
-    @TargetElement(onlyWith = JDK17OrEarlier.class)
-    Target_jdk_jfr_internal_EventWriter(long committedPos, long maxPos, long committedPosAddress, long threadID, boolean valid) {
-    }
-
-    @Alias
-    @SuppressWarnings("unused")
-    @TargetElement(onlyWith = JDK19OrLater.class)
-    Target_jdk_jfr_internal_EventWriter(long committedPos, long maxPos, long threadID, boolean valid, boolean excluded) {
+    @Fold
+    static boolean enabled() {
+        return ImageSingletons.contains(SubstrateControlFlowIntegrity.class);
     }
 }
