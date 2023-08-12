@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,24 +22,8 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
+package com.oracle.svm.truffle.nfi.none;
 
-package com.oracle.svm.core.jdk.resources;
-
-public class ResourceException extends ResourceStorageEntryBase {
-
-    private final Exception e;
-
-    public ResourceException(Exception e) {
-        this.e = e;
-    }
-
-    @Override
-    public boolean isException() {
-        return true;
-    }
-
-    @Override
-    public Exception getException() {
-        return e;
-    }
+// Dummy class to avoid `MX_BUILD_EXPLODED=true mx build` failing
+final class TruffleNFINoneDummyClass {
 }

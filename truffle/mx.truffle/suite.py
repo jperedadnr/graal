@@ -70,15 +70,6 @@ suite = {
 
     # ------------- Libraries -------------
 
-    "JLINE" : {
-      "digest" : "sha512:27f6e2523e539383cede51d8eae7e97d49038c5a66cb4a94a9ce85165f16e7382b937a238cdb0c92e1136af56c5f57bcc6c04435a370c5d49f7e4bd32f0d9194",
-      "maven" : {
-        "groupId" : "jline",
-        "artifactId" : "jline",
-        "version" : "2.14.6",
-      }
-    },
-
     "LIBFFI_SOURCES" : {
       "resource" : True,
       "version" : "3.4.4",
@@ -323,6 +314,30 @@ suite = {
       "checkstyle" : "com.oracle.truffle.api",
       "javaCompliance" : "17+",
       "workingSets" : "API,Truffle",
+    },
+
+    "com.oracle.truffle.api.modularized.test" : {
+      "subDir" : "src",
+      "sourceDirs" : ["src"],
+      "dependencies" : [
+        "com.oracle.truffle.api.modularized.test.separate.module.test",
+        "TRUFFLE_API",
+        "sdk:GRAAL_SDK",
+        "mx:JUNIT",
+      ],
+      "checkstyle" : "com.oracle.truffle.dsl.processor",
+      "javaCompliance" : "17+",
+      "annotationProcessors" : ["TRUFFLE_DSL_PROCESSOR"],
+      "workingSets" : "API,Truffle,Test",
+      "jacoco" : "exclude",
+    },
+
+    "com.oracle.truffle.api.modularized.test.separate.module.test" : {
+      "subDir" : "src",
+      "sourceDirs" : ["src"],
+      "javaCompliance" : "17+",
+      "workingSets" : "API,Truffle,Test",
+      "jacoco" : "exclude",
     },
 
     "com.oracle.truffle.api.test" : {
@@ -1212,6 +1227,54 @@ suite = {
       "layout" : {
         "./" : "dependency:libffi/*"
       }
+    },
+
+    "TRUFFLE_MODULARIZED_TEST" : {
+      # This distribution defines a module.
+      "moduleInfo" : {
+        "name" : "com.oracle.trufflemodtest",
+        "exports" : [
+          # Unqualified exports
+          "com.oracle.truffle.api.modularized.test",
+        ],
+      },
+      "subDir" : "src",
+      "javaCompliance" : "17+",
+      "dependencies" : [
+        "com.oracle.truffle.api.modularized.test",
+      ],
+      "distDependencies" : [
+        "sdk:GRAAL_SDK",
+        "TRUFFLE_API",
+        "TRUFFLE_RUNTIME",
+        "TRUFFLE_SL",
+        "TRUFFLE_MODULARIZED_TEST_SEPARATE_MODULE_TEST",
+      ],
+      "exclude" : [
+        "mx:JUNIT",
+      ],
+      "useModulePath": True,
+      "description" : "Module with JUnit tests for testing Truffle API in modular applications.",
+      "maven": False,
+    },
+
+    "TRUFFLE_MODULARIZED_TEST_SEPARATE_MODULE_TEST" : {
+      # This distribution defines a module.
+      "moduleInfo" : {
+        "name" : "com.oracle.trufflemodtestseparate",
+        "exports" : [
+          # Qualified exports
+          "com.oracle.truffle.api.modularized.test.separate.module.test to com.oracle.trufflemodtest",
+        ],
+      },
+      "subDir" : "src",
+      "javaCompliance" : "17+",
+      "dependencies" : [
+        "com.oracle.truffle.api.modularized.test.separate.module.test",
+      ],
+      "useModulePath": True,
+      "description" : "Separate test module for testing Truffle API in modular applications.",
+      "maven": False,
     },
 
     "TRUFFLE_COMPILER" : {
