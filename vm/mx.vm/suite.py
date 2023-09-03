@@ -33,7 +33,7 @@ suite = {
                 "name": "graal-nodejs",
                 "subdir": True,
                 "dynamic": True,
-                "version": "d0f359c29ec97722301997359ee878ea053da19e",
+                "version": "ccf0bbba4bfe97900a4d9162be85cc31b9f7ba89",
                 "urls" : [
                     {"url" : "https://github.com/graalvm/graaljs.git", "kind" : "git"},
                 ]
@@ -42,7 +42,7 @@ suite = {
                 "name": "graal-js",
                 "subdir": True,
                 "dynamic": True,
-                "version": "d0f359c29ec97722301997359ee878ea053da19e",
+                "version": "ccf0bbba4bfe97900a4d9162be85cc31b9f7ba89",
                 "urls": [
                     {"url": "https://github.com/graalvm/graaljs.git", "kind" : "git"},
                 ]
@@ -65,7 +65,7 @@ suite = {
             },
             {
                 "name": "graalpython",
-                "version": "f42da6d958171905ddc00e26bd7b0ce52dca732a",
+                "version": "cbb9985782bf0f68969ae6f2eb6101fd02eb4db4",
                 "dynamic": True,
                 "urls": [
                     {"url": "https://github.com/graalvm/graalpython.git", "kind": "git"},
@@ -83,6 +83,19 @@ suite = {
     },
 
     "projects": {
+        "org.graalvm.maven.downloader" : {
+            "subDir" : "src",
+            "sourceDirs" : ["src"],
+            "javaCompliance" : "17+",
+            "license" : "UPL",
+            "dependencies": [
+                "sdk:NATIVEIMAGE",
+            ],
+            "requires": [
+                "java.logging",
+                "java.xml",
+            ],
+        },
         "org.graalvm.component.installer" : {
             "subDir" : "src",
             "sourceDirs" : ["src"],
@@ -191,6 +204,17 @@ suite = {
     },
 
     "distributions": {
+        "MAVEN_DOWNLOADER": {
+            "defaultBuild": False,
+            "mainClass": "org.graalvm.maven.downloader.Main",
+            "dependencies": [
+                "org.graalvm.maven.downloader",
+            ],
+            "distDependencies": [
+                "sdk:NATIVEIMAGE",
+            ],
+            "maven": False,
+        },
         "INSTALLER": {
             "subDir": "src",
             "mainClass": "org.graalvm.component.installer.ComponentInstaller",
