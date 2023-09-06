@@ -57,7 +57,7 @@ suite = {
             },
             {
                 "name": "fastr",
-                "version": "4d2fdc9f4b2a5e6e41c1e55283dbeb174d22f626",
+                "version": "c32d80d9904181b0af617e1ae230ae5cd8183145",
                 "dynamic": True,
                 "urls": [
                     {"url": "https://github.com/oracle/fastr.git", "kind": "git"},
@@ -83,19 +83,6 @@ suite = {
     },
 
     "projects": {
-        "org.graalvm.maven.downloader" : {
-            "subDir" : "src",
-            "sourceDirs" : ["src"],
-            "javaCompliance" : "17+",
-            "license" : "UPL",
-            "dependencies": [
-                "sdk:NATIVEIMAGE",
-            ],
-            "requires": [
-                "java.logging",
-                "java.xml",
-            ],
-        },
         "org.graalvm.component.installer" : {
             "subDir" : "src",
             "sourceDirs" : ["src"],
@@ -204,17 +191,6 @@ suite = {
     },
 
     "distributions": {
-        "MAVEN_DOWNLOADER": {
-            "defaultBuild": False,
-            "mainClass": "org.graalvm.maven.downloader.Main",
-            "dependencies": [
-                "org.graalvm.maven.downloader",
-            ],
-            "distDependencies": [
-                "sdk:NATIVEIMAGE",
-            ],
-            "maven": False,
-        },
         "INSTALLER": {
             "subDir": "src",
             "mainClass": "org.graalvm.component.installer.ComponentInstaller",
