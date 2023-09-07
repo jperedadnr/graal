@@ -108,6 +108,7 @@ _base_jdk_version_info = None
 
 default_components = []
 
+USE_LEGACY_GU = mx.str_to_bool(mx.get_env('LEGACY_GU', 'false'))
 
 mx.add_argument('--base-dist-name', help='Sets the name of the GraalVM base image ( for complete, ruby ... images), default to "base"', default='base')
 
@@ -205,6 +206,7 @@ def registered_graalvm_components(stage1=False):
                         # the `GraalVmNativeImage` project has a build-time dependency to Stage1
                         jar_distributions=[],
                         build_args=[
+                               '-J-Xms20G',
                                '-Dgraalvm.libpolyglot=true',
                                '-Dorg.graalvm.polyglot.install_name_id=@rpath/<jre_home>/lib/polyglot/<lib:polyglot>',
                                '--tool:all',
@@ -866,10 +868,11 @@ class BaseGraalVmLayoutDistribution(mx.LayoutDistribution, metaclass=ABCMeta):
                 catalog = gds_snapshot_catalog
             else:
                 catalog = None
-        if catalog:
-            _metadata_dict['component_catalog'] = catalog
-        if gds_product_id:
-            _metadata_dict['GDS_PRODUCT_ID'] = gds_product_id
+        if USE_LEGACY_GU:
+            if catalog:
+                _metadata_dict['component_catalog'] = catalog
+            if gds_product_id:
+                _metadata_dict['GDS_PRODUCT_ID'] = gds_product_id
 
         # COMMIT_INFO is unquoted to simplify JSON parsing
         return mx_sdk_vm.format_release_file(_metadata_dict, {'COMMIT_INFO'})
@@ -3517,7 +3520,7 @@ def mx_register_dynamic_suite_constituents(register_project, register_distributi
                         }
                         register_distribution(mx.LayoutDirDistribution(
                             suite=_suite,
-                            name=library_config.isolate_library_layout_distribution,
+                            name=library_config.isolate_library_layout_distribution['name'],
                             deps=[],
                             layout={
                                 f'{resource_base_folder}/': f'dependency:{library_project.name}'
@@ -3525,6 +3528,7 @@ def mx_register_dynamic_suite_constituents(register_project, register_distributi
                             path=None,
                             platformDependent=True,
                             theLicense=None,
+                            platforms=library_config.isolate_library_layout_distribution['platforms'],
                             **attrs
                         ))
             if isinstance(component, mx_sdk.GraalVmLanguage) and component.support_distributions:
