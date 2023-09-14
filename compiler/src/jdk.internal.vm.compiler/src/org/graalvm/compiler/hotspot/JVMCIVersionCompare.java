@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,25 +22,17 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package com.oracle.svm.core.thread;
+package org.graalvm.compiler.hotspot;
 
-import java.util.function.Function;
+public final class JVMCIVersionCompare {
 
-import org.graalvm.compiler.serviceprovider.JavaVersionUtil;
-import org.graalvm.nativeimage.Platform;
-import org.graalvm.nativeimage.Platforms;
-
-import com.oracle.svm.core.annotate.TargetClass;
-
-@Platforms(Platform.HOSTED_ONLY.class)
-public class Package_jdk_incubator_concurrent_helper implements Function<TargetClass, String> {
-
-    @Override
-    public String apply(TargetClass annotation) {
-        if (JavaVersionUtil.JAVA_SPEC >= 21) {
-            return "java.lang." + annotation.className();
-        } else {
-            return "jdk.incubator.concurrent." + annotation.className();
+    public static void main(String[] args) {
+        if (args.length != 2) {
+            System.err.println("Expected two arguments");
+            System.exit(1);
         }
+        Runtime.Version a = Runtime.Version.parse(args[0]);
+        Runtime.Version b = Runtime.Version.parse(args[1]);
+        System.out.print(a.compareTo(b));
     }
 }
