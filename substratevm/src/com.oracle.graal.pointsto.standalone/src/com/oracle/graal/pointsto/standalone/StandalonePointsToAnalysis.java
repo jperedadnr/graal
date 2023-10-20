@@ -30,9 +30,9 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ForkJoinPool;
 
-import org.graalvm.compiler.api.replacements.SnippetReflectionProvider;
-import org.graalvm.compiler.options.OptionValues;
-import org.graalvm.compiler.word.WordTypes;
+import jdk.compiler.graal.api.replacements.SnippetReflectionProvider;
+import jdk.compiler.graal.options.OptionValues;
+import jdk.compiler.graal.word.WordTypes;
 
 import com.oracle.graal.pointsto.PointsToAnalysis;
 import com.oracle.graal.pointsto.api.HostVM;
@@ -51,9 +51,8 @@ public class StandalonePointsToAnalysis extends PointsToAnalysis {
     public StandalonePointsToAnalysis(OptionValues options, AnalysisUniverse universe, HostVM hostVM,
                     AnalysisMetaAccess metaAccess, SnippetReflectionProvider snippetReflectionProvider,
                     ConstantReflectionProvider constantReflectionProvider, WordTypes wordTypes,
-                    ForkJoinPool executorService, Runnable heartbeatCallback,
-                    TimerCollection timerCollection) {
-        super(options, universe, hostVM, metaAccess, snippetReflectionProvider, constantReflectionProvider, wordTypes, executorService, heartbeatCallback, new UnsupportedFeatures(), timerCollection,
+                    ForkJoinPool executorService, TimerCollection timerCollection) {
+        super(options, universe, hostVM, metaAccess, snippetReflectionProvider, constantReflectionProvider, wordTypes, executorService, new UnsupportedFeatures(), timerCollection,
                         true);
     }
 

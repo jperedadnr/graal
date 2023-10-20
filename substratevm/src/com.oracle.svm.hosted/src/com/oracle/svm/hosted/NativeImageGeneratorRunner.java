@@ -30,6 +30,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -46,10 +47,10 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.graalvm.collections.Pair;
-import org.graalvm.compiler.core.riscv64.ShadowedRISCV64;
-import org.graalvm.compiler.debug.DebugContext;
-import org.graalvm.compiler.options.OptionValues;
-import org.graalvm.compiler.printer.GraalDebugHandlersFactory;
+import jdk.compiler.graal.core.riscv64.ShadowedRISCV64;
+import jdk.compiler.graal.debug.DebugContext;
+import jdk.compiler.graal.options.OptionValues;
+import jdk.compiler.graal.printer.GraalDebugHandlersFactory;
 import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.c.function.CEntryPoint;
 import org.graalvm.nativeimage.c.type.CCharPointerPointer;
@@ -102,23 +103,23 @@ public class NativeImageGeneratorRunner {
         arguments = extractDriverArguments(arguments);
         final String[] classPath = extractImagePathEntries(arguments, SubstrateOptions.IMAGE_CLASSPATH_PREFIX);
         final String[] modulePath = extractImagePathEntries(arguments, SubstrateOptions.IMAGE_MODULEPATH_PREFIX);
-        int watchPID = extractWatchPID(arguments);
+        String keepAliveFile = extractKeepAliveFile(arguments);
         TimerTask timerTask = null;
-        if (watchPID >= 0) {
-            UserError.guarantee(OS.getCurrent().hasProcFS, "%s <pid> requires system with /proc", SubstrateOptions.WATCHPID_PREFIX);
+        if (keepAliveFile != null) {
             timerTask = new TimerTask() {
-                int cmdlineHashCode = 0;
+                Path file = Paths.get(keepAliveFile);
+                int fileHashCode = 0;
 
                 @Override
                 public void run() {
                     try {
-                        int currentCmdlineHashCode = Arrays.hashCode(Files.readAllBytes(Paths.get("/proc/" + watchPID + "/cmdline")));
-                        if (cmdlineHashCode == 0) {
-                            cmdlineHashCode = currentCmdlineHashCode;
-                        } else if (currentCmdlineHashCode != cmdlineHashCode) {
-                            System.exit(ExitStatus.WATCHDOG_EXIT.getValue());
+                        int currentFileHashCode = Arrays.hashCode(Files.readAllBytes(file));
+                        if (fileHashCode == 0) {
+                            fileHashCode = currentFileHashCode;
+                        } else if (currentFileHashCode != fileHashCode) {
+                            throw new RuntimeException();
                         }
-                    } catch (IOException e) {
+                    } catch (Exception e) {
                         System.exit(ExitStatus.WATCHDOG_EXIT.getValue());
                     }
                 }
@@ -225,9 +226,10 @@ public class NativeImageGeneratorRunner {
         for (Module potentialNeedModule : potentialNeededModules) {
             if (requiringModule.canRead(potentialNeedModule)) {
                 /* Filter out GraalVM modules */
-                if (potentialNeedModule.getName().startsWith("jdk.internal.vm.c") || /* JVMCI */
+                if (potentialNeedModule.getName().equals("jdk.internal.vm.ci") || /* JVMCI */
                                 /* graal */
                                 potentialNeedModule.getName().startsWith("org.graalvm.") ||
+                                potentialNeedModule.getName().startsWith("jdk.compiler.graal") ||
                                 /* enterprise graal */
                                 potentialNeedModule.getName().startsWith("com.oracle.graal.") ||
                                 /* exclude all truffle modules */
@@ -328,18 +330,18 @@ public class NativeImageGeneratorRunner {
         }
     }
 
-    public static int extractWatchPID(List<String> arguments) {
-        int cpIndex = arguments.indexOf(SubstrateOptions.WATCHPID_PREFIX);
+    public static String extractKeepAliveFile(List<String> arguments) {
+        int cpIndex = arguments.indexOf(SubstrateOptions.KEEP_ALIVE_PREFIX);
         if (cpIndex >= 0) {
             if (cpIndex + 1 >= arguments.size()) {
-                throw UserError.abort("ProcessID must be provided after the '%s' argument", SubstrateOptions.WATCHPID_PREFIX);
+                throw UserError.abort("Path to keep-alive file must be provided after the '%s' argument", SubstrateOptions.KEEP_ALIVE_PREFIX);
             }
             arguments.remove(cpIndex);
             String pidStr = arguments.get(cpIndex);
             arguments.remove(cpIndex);
-            return Integer.parseInt(pidStr);
+            return pidStr;
         }
-        return -1;
+        return null;
     }
 
     private static void reportToolUserError(String msg) {
@@ -741,8 +743,8 @@ public class NativeImageGeneratorRunner {
             ModuleSupport.accessPackagesToClass(ModuleSupport.Access.OPEN, null, false, "org.graalvm.polyglot");
             ModuleSupport.accessPackagesToClass(ModuleSupport.Access.OPEN, null, false, "org.graalvm.truffle");
             ModuleSupport.accessPackagesToClass(ModuleSupport.Access.OPEN, null, false, "jdk.internal.vm.ci");
-            ModuleSupport.accessPackagesToClass(ModuleSupport.Access.OPEN, null, false, "jdk.internal.vm.compiler");
-            ModuleSupport.accessPackagesToClass(ModuleSupport.Access.OPEN, null, true, "jdk.internal.vm.compiler.management");
+            ModuleSupport.accessPackagesToClass(ModuleSupport.Access.OPEN, null, false, "jdk.compiler.graal");
+            ModuleSupport.accessPackagesToClass(ModuleSupport.Access.OPEN, null, true, "jdk.compiler.graal.management");
             ModuleSupport.accessPackagesToClass(ModuleSupport.Access.OPEN, null, true, "com.oracle.graal.graal_enterprise");
             ModuleSupport.accessPackagesToClass(ModuleSupport.Access.OPEN, null, false, "java.base", "jdk.internal.loader");
             ModuleSupport.accessPackagesToClass(ModuleSupport.Access.OPEN, null, false, "java.base", "jdk.internal.misc");

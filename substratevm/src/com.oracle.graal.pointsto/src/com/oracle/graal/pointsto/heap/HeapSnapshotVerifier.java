@@ -30,9 +30,9 @@ import java.util.Objects;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;
 
-import org.graalvm.compiler.options.Option;
-import org.graalvm.compiler.options.OptionKey;
-import org.graalvm.compiler.options.OptionType;
+import jdk.compiler.graal.options.Option;
+import jdk.compiler.graal.options.OptionKey;
+import jdk.compiler.graal.options.OptionType;
 
 import com.oracle.graal.pointsto.BigBang;
 import com.oracle.graal.pointsto.ObjectScanner;
@@ -75,7 +75,7 @@ public class HeapSnapshotVerifier {
     }
 
     public boolean checkHeapSnapshot(UniverseMetaAccess metaAccess, ForkJoinPool threadPool, String stage) {
-        CompletionExecutor executor = new CompletionExecutor(bb, threadPool, bb.getHeartbeatCallback());
+        CompletionExecutor executor = new CompletionExecutor(bb, threadPool);
         executor.init();
         return checkHeapSnapshot(metaAccess, executor, stage, false);
     }

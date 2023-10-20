@@ -35,35 +35,37 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import org.graalvm.compiler.code.CompilationResult;
-import org.graalvm.compiler.graph.Node;
-import org.graalvm.compiler.lir.RedundantMoveElimination;
-import org.graalvm.compiler.lir.alloc.RegisterAllocationPhase;
-import org.graalvm.compiler.lir.phases.LIRPhase;
-import org.graalvm.compiler.lir.phases.LIRSuites;
-import org.graalvm.compiler.lir.phases.PostAllocationOptimizationPhase;
-import org.graalvm.compiler.nodes.AbstractBeginNode;
-import org.graalvm.compiler.nodes.FixedNode;
-import org.graalvm.compiler.nodes.FixedWithNextNode;
-import org.graalvm.compiler.nodes.FrameState;
-import org.graalvm.compiler.nodes.Invoke;
-import org.graalvm.compiler.nodes.InvokeNode;
-import org.graalvm.compiler.nodes.StartNode;
-import org.graalvm.compiler.nodes.StateSplit;
-import org.graalvm.compiler.nodes.StructuredGraph;
-import org.graalvm.compiler.nodes.extended.ForeignCallNode;
-import org.graalvm.compiler.nodes.util.GraphUtil;
-import org.graalvm.compiler.phases.BasePhase;
-import org.graalvm.compiler.phases.PhaseSuite;
-import org.graalvm.compiler.phases.common.BoxNodeOptimizationPhase;
-import org.graalvm.compiler.phases.common.FixReadsPhase;
-import org.graalvm.compiler.phases.common.FloatingReadPhase;
-import org.graalvm.compiler.phases.tiers.HighTierContext;
-import org.graalvm.compiler.phases.tiers.LowTierContext;
-import org.graalvm.compiler.phases.tiers.MidTierContext;
-import org.graalvm.compiler.phases.tiers.Suites;
-import org.graalvm.compiler.virtual.phases.ea.PartialEscapePhase;
-import org.graalvm.compiler.virtual.phases.ea.ReadEliminationPhase;
+import jdk.compiler.graal.code.CompilationResult;
+import jdk.compiler.graal.graph.Node;
+import jdk.compiler.graal.graph.iterators.NodePredicate;
+import jdk.compiler.graal.graph.iterators.NodePredicates;
+import jdk.compiler.graal.lir.RedundantMoveElimination;
+import jdk.compiler.graal.lir.alloc.RegisterAllocationPhase;
+import jdk.compiler.graal.lir.phases.LIRPhase;
+import jdk.compiler.graal.lir.phases.LIRSuites;
+import jdk.compiler.graal.lir.phases.PostAllocationOptimizationPhase;
+import jdk.compiler.graal.nodes.AbstractBeginNode;
+import jdk.compiler.graal.nodes.FixedNode;
+import jdk.compiler.graal.nodes.FixedWithNextNode;
+import jdk.compiler.graal.nodes.FrameState;
+import jdk.compiler.graal.nodes.Invoke;
+import jdk.compiler.graal.nodes.InvokeNode;
+import jdk.compiler.graal.nodes.StartNode;
+import jdk.compiler.graal.nodes.StateSplit;
+import jdk.compiler.graal.nodes.StructuredGraph;
+import jdk.compiler.graal.nodes.extended.ForeignCallNode;
+import jdk.compiler.graal.nodes.util.GraphUtil;
+import jdk.compiler.graal.phases.BasePhase;
+import jdk.compiler.graal.phases.PhaseSuite;
+import jdk.compiler.graal.phases.common.BoxNodeOptimizationPhase;
+import jdk.compiler.graal.phases.common.FixReadsPhase;
+import jdk.compiler.graal.phases.common.FloatingReadPhase;
+import jdk.compiler.graal.phases.tiers.HighTierContext;
+import jdk.compiler.graal.phases.tiers.LowTierContext;
+import jdk.compiler.graal.phases.tiers.MidTierContext;
+import jdk.compiler.graal.phases.tiers.Suites;
+import jdk.compiler.graal.virtual.phases.ea.PartialEscapePhase;
+import jdk.compiler.graal.virtual.phases.ea.ReadEliminationPhase;
 
 import com.oracle.graal.pointsto.PointsToAnalysis;
 import com.oracle.graal.pointsto.flow.MethodFlowsGraph;
@@ -71,6 +73,7 @@ import com.oracle.graal.pointsto.meta.AnalysisMethod;
 import com.oracle.graal.pointsto.meta.PointsToAnalysisMethod;
 import com.oracle.svm.common.meta.MultiMethod;
 import com.oracle.svm.core.Uninterruptible;
+import com.oracle.svm.core.classinitialization.EnsureClassInitializedNode;
 import com.oracle.svm.core.code.FrameInfoEncoder;
 import com.oracle.svm.core.deopt.DeoptEntryInfopoint;
 import com.oracle.svm.core.deopt.DeoptTest;
@@ -124,7 +127,7 @@ public class DeoptimizationUtils {
      *
      * Note this should only be called within CompileQueue#parseAheadOfTimeCompiledMethods
      */
-    public static boolean canDeoptForTesting(AnalysisMethod method, boolean deoptimizeAll, Supplier<Boolean> containsStackValueNodes) {
+    public static boolean canDeoptForTesting(AnalysisMethod method, boolean deoptimizeAll, Supplier<Boolean> graphInvalidator) {
         if (SubstrateCompilationDirectives.singleton().isRegisteredForDeoptTesting(method)) {
             return true;
         }
@@ -143,16 +146,7 @@ public class DeoptimizationUtils {
             return false;
         }
 
-        if (containsStackValueNodes.get()) {
-            /*
-             * Stack allocated memory is not seen by the deoptimization code, i.e., it is not copied
-             * in case of deoptimization. Also, pointers to it can be used for arbitrary address
-             * arithmetic, so we would not know how to update derived pointers into stack memory
-             * during deoptimization. Therefore, we cannot allow methods that allocate stack memory
-             * for runtime compilation. To remove this limitation, we would need to change how we
-             * handle stack allocated memory in Graal.
-             */
-
+        if (graphInvalidator.get()) {
             return false;
         }
 
@@ -297,7 +291,7 @@ public class DeoptimizationUtils {
         /*
          * No deopt targets can have a StackValueNode in the graph.
          */
-        assert graph.getNodes(StackValueNode.TYPE).isEmpty() : "No stack value nodes must be present in deopt target.";
+        assert !createGraphInvalidator(graph).get() : "Invalid nodes in deopt target: " + graph;
 
         for (Infopoint infopoint : result.getInfopoints()) {
             if (infopoint.debugInfo != null) {
@@ -485,5 +479,39 @@ public class DeoptimizationUtils {
         }
 
         return changedMethods;
+    }
+
+    /*
+     * Stack allocated memory is not seen by the deoptimization code, i.e., it is not copied in case
+     * of deoptimization. Also, pointers to it can be used for arbitrary address arithmetic, so we
+     * would not know how to update derived pointers into stack memory during deoptimization.
+     * Therefore, we cannot allow methods that allocate stack memory for runtime compilation. To
+     * remove this limitation, we would need to change how we handle stack allocated memory in
+     * Graal.
+     *
+     * We also do not allow class initialization at run time to ensure the partial evaluator does
+     * not constant fold uninitialized fields.
+     */
+    private static final NodePredicate invalidNodes = n -> NodePredicates.isA(StackValueNode.class).or(NodePredicates.isA(EnsureClassInitializedNode.class)).test(n);
+
+    /**
+     * @return Supplier which returns true if the graph contains invalid nodes.
+     */
+    public static Supplier<Boolean> createGraphInvalidator(StructuredGraph graph) {
+        return () -> {
+            if (!graph.method().getDeclaringClass().isInitialized()) {
+                /*
+                 * All types which are used at run time should build-time initialized. This ensures
+                 * the partial evaluator does not constant fold uninitialized fields.
+                 */
+                return true;
+            }
+
+            if (graph.getNodes().filter(invalidNodes).isNotEmpty()) {
+                return true;
+            }
+
+            return false;
+        };
     }
 }

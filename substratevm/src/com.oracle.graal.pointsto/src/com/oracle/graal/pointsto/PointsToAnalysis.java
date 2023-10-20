@@ -44,12 +44,14 @@ import java.util.concurrent.atomic.AtomicLongArray;
 import java.util.function.Consumer;
 import java.util.stream.StreamSupport;
 
-import org.graalvm.compiler.api.replacements.SnippetReflectionProvider;
-import org.graalvm.compiler.core.common.SuppressFBWarnings;
-import org.graalvm.compiler.debug.DebugContext;
-import org.graalvm.compiler.debug.Indent;
-import org.graalvm.compiler.options.OptionValues;
-import org.graalvm.compiler.word.WordTypes;
+import jdk.compiler.graal.api.replacements.SnippetReflectionProvider;
+import jdk.compiler.graal.core.common.SuppressFBWarnings;
+import jdk.compiler.graal.debug.DebugContext;
+import jdk.compiler.graal.debug.Indent;
+import jdk.compiler.graal.graph.Node;
+import jdk.compiler.graal.graph.NodeList;
+import jdk.compiler.graal.options.OptionValues;
+import jdk.compiler.graal.word.WordTypes;
 
 import com.oracle.graal.pointsto.api.HostVM;
 import com.oracle.graal.pointsto.api.PointstoOptions;
@@ -109,9 +111,9 @@ public abstract class PointsToAnalysis extends AbstractAnalysisEngine {
 
     @SuppressWarnings("this-escape")
     public PointsToAnalysis(OptionValues options, AnalysisUniverse universe, HostVM hostVM, AnalysisMetaAccess metaAccess, SnippetReflectionProvider snippetReflectionProvider,
-                    ConstantReflectionProvider constantReflectionProvider, WordTypes wordTypes, ForkJoinPool executorService, Runnable heartbeatCallback,
-                    UnsupportedFeatures unsupportedFeatures, TimerCollection timerCollection, boolean strengthenGraalGraphs) {
-        super(options, universe, hostVM, metaAccess, snippetReflectionProvider, constantReflectionProvider, wordTypes, executorService, heartbeatCallback, unsupportedFeatures, timerCollection);
+                    ConstantReflectionProvider constantReflectionProvider, WordTypes wordTypes, ForkJoinPool executorService, UnsupportedFeatures unsupportedFeatures, TimerCollection timerCollection,
+                    boolean strengthenGraalGraphs) {
+        super(options, universe, hostVM, metaAccess, snippetReflectionProvider, constantReflectionProvider, wordTypes, executorService, unsupportedFeatures, timerCollection);
         this.typeFlowTimer = timerCollection.createTimer("(typeflow)");
 
         this.strengthenGraalGraphs = strengthenGraalGraphs;
@@ -256,11 +258,11 @@ public abstract class PointsToAnalysis extends AbstractAnalysisEngine {
     }
 
     public AnalysisType getGraalNodeType() {
-        return metaAccess.lookupJavaType(org.graalvm.compiler.graph.Node.class);
+        return metaAccess.lookupJavaType(Node.class);
     }
 
     public AnalysisType getGraalNodeListType() {
-        return metaAccess.lookupJavaType(org.graalvm.compiler.graph.NodeList.class);
+        return metaAccess.lookupJavaType(NodeList.class);
     }
 
     public TypeFlow<?> getAllInstantiatedTypeFlow() {

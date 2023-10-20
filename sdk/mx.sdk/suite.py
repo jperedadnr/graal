@@ -39,7 +39,7 @@
 # SOFTWARE.
 #
 suite = {
-  "mxversion": "6.39.0",
+  "mxversion": "6.52.0",
   "name" : "sdk",
   "version" : "24.0.0",
   "release" : False,
@@ -757,7 +757,7 @@ suite = {
         "requires" : [],
         "exports" : [
             "org.graalvm.word",
-            "org.graalvm.word.impl to jdk.internal.vm.compiler",
+            "org.graalvm.word.impl to jdk.compiler.graal",
         ],
         "uses" : [],
         "opens" : [],
@@ -775,7 +775,6 @@ suite = {
           "org.graalvm.maven.downloader",
         ],
       },
-      "defaultBuild": False,
       "mainClass": "org.graalvm.maven.downloader.Main",
       "dependencies": [
         "org.graalvm.maven.downloader",
@@ -783,7 +782,12 @@ suite = {
       "distDependencies": [
         "sdk:NATIVEIMAGE",
       ],
-      "maven": False,
+      "allowsJavadocWarnings": True,
+      "noMavenJavadoc": True,
+      "description" : "Helpers to download maven artifacts without maven.",
+      "maven": {
+        "tag": ["default", "public"],
+      },
     },
 
     "SDK_TEST" : {

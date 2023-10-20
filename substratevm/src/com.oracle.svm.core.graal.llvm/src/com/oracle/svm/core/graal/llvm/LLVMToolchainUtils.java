@@ -33,8 +33,8 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 
-import org.graalvm.compiler.debug.DebugContext;
-import org.graalvm.compiler.debug.GraalError;
+import jdk.compiler.graal.debug.DebugContext;
+import jdk.compiler.graal.debug.GraalError;
 
 import com.oracle.graal.pointsto.BigBang;
 import com.oracle.graal.pointsto.util.CompletionExecutor;
@@ -171,7 +171,7 @@ public class LLVMToolchainUtils {
         private CompletionExecutor executor;
 
         public BatchExecutor(BigBang bb, ForkJoinPool threadPool) {
-            this.executor = new CompletionExecutor(bb, threadPool, bb.getHeartbeatCallback());
+            this.executor = new CompletionExecutor(bb, threadPool);
             executor.init();
         }
 

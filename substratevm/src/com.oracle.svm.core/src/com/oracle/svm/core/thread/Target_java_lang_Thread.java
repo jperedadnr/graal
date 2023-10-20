@@ -32,8 +32,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ThreadFactory;
 
-import org.graalvm.compiler.api.directives.GraalDirectives;
-import org.graalvm.compiler.replacements.ReplacementsUtil;
+import jdk.compiler.graal.api.directives.GraalDirectives;
+import jdk.compiler.graal.replacements.ReplacementsUtil;
 import org.graalvm.nativeimage.IsolateThread;
 import org.graalvm.nativeimage.Platforms;
 import org.graalvm.nativeimage.impl.InternalPlatform;
@@ -64,8 +64,8 @@ import com.oracle.svm.core.util.VMError;
 public final class Target_java_lang_Thread {
 
     // Checkstyle: stop
-    @Alias //
-    public static StackTraceElement[] EMPTY_STACK_TRACE;
+    @Delete //
+    static StackTraceElement[] EMPTY_STACK_TRACE;
 
     @Alias //
     static int NO_INHERIT_THREAD_LOCALS;

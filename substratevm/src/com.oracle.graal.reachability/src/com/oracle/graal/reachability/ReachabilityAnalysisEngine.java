@@ -32,11 +32,11 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ForkJoinPool;
 
-import org.graalvm.compiler.api.replacements.SnippetReflectionProvider;
-import org.graalvm.compiler.core.common.type.TypedConstant;
-import org.graalvm.compiler.nodes.StructuredGraph;
-import org.graalvm.compiler.options.OptionValues;
-import org.graalvm.compiler.word.WordTypes;
+import jdk.compiler.graal.api.replacements.SnippetReflectionProvider;
+import jdk.compiler.graal.core.common.type.TypedConstant;
+import jdk.compiler.graal.nodes.StructuredGraph;
+import jdk.compiler.graal.options.OptionValues;
+import jdk.compiler.graal.word.WordTypes;
 
 import com.oracle.graal.pointsto.AbstractAnalysisEngine;
 import com.oracle.graal.pointsto.api.HostVM;
@@ -80,10 +80,9 @@ public abstract class ReachabilityAnalysisEngine extends AbstractAnalysisEngine 
 
     @SuppressWarnings("this-escape")
     public ReachabilityAnalysisEngine(OptionValues options, AnalysisUniverse universe, HostVM hostVM, AnalysisMetaAccess metaAccess, SnippetReflectionProvider snippetReflectionProvider,
-                    ConstantReflectionProvider constantReflectionProvider, WordTypes wordTypes, ForkJoinPool executorService, Runnable heartbeatCallback,
-                    UnsupportedFeatures unsupportedFeatures, TimerCollection timerCollection,
+                    ConstantReflectionProvider constantReflectionProvider, WordTypes wordTypes, ForkJoinPool executorService, UnsupportedFeatures unsupportedFeatures, TimerCollection timerCollection,
                     ReachabilityMethodProcessingHandler reachabilityMethodProcessingHandler) {
-        super(options, universe, hostVM, metaAccess, snippetReflectionProvider, constantReflectionProvider, wordTypes, executorService, heartbeatCallback, unsupportedFeatures, timerCollection);
+        super(options, universe, hostVM, metaAccess, snippetReflectionProvider, constantReflectionProvider, wordTypes, executorService, unsupportedFeatures, timerCollection);
         this.executor.init(getTiming());
         this.reachabilityTimer = timerCollection.createTimer("(reachability)");
 

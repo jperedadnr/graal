@@ -35,12 +35,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 
-import org.graalvm.compiler.debug.DebugContext;
-import org.graalvm.compiler.debug.DebugContext.Activation;
-import org.graalvm.compiler.debug.DebugContext.Description;
-import org.graalvm.compiler.debug.DebugContext.Scope;
-import org.graalvm.compiler.debug.DebugHandlersFactory;
-import org.graalvm.compiler.options.OptionValues;
+import jdk.compiler.graal.debug.DebugContext;
+import jdk.compiler.graal.debug.DebugContext.Activation;
+import jdk.compiler.graal.debug.DebugContext.Description;
+import jdk.compiler.graal.debug.DebugContext.Scope;
+import jdk.compiler.graal.debug.DebugHandlersFactory;
+import jdk.compiler.graal.options.OptionValues;
 
 import com.oracle.graal.pointsto.BigBang;
 
@@ -65,7 +65,6 @@ public class CompletionExecutor {
     private final CopyOnWriteArrayList<Throwable> exceptions = new CopyOnWriteArrayList<>();
 
     private ExecutorService executorService;
-    private final Runnable heartbeatCallback;
 
     private final BigBang bb;
     private Timing timing;
@@ -83,9 +82,8 @@ public class CompletionExecutor {
         void print();
     }
 
-    public CompletionExecutor(BigBang bb, ForkJoinPool forkJoin, Runnable heartbeatCallback) {
+    public CompletionExecutor(BigBang bb, ForkJoinPool forkJoin) {
         this.bb = bb;
-        this.heartbeatCallback = heartbeatCallback;
         executorService = forkJoin;
         state = new AtomicReference<>(State.UNUSED);
         postedOperations = new LongAdder();
@@ -150,7 +148,7 @@ public class CompletionExecutor {
                 }
 
                 if (isSequential()) {
-                    heartbeatCallback.run();
+                    bb.getHostVM().recordActivity();
                     try (DebugContext debug = command.getDebug(bb.getOptions(), bb.getDebugHandlerFactories());
                                     Scope s = debug.scope("Operation")) {
                         command.run(debug);
@@ -179,7 +177,7 @@ public class CompletionExecutor {
         if (timing != null) {
             startTime = System.nanoTime();
         }
-        heartbeatCallback.run();
+        bb.getHostVM().recordActivity();
         Throwable thrown = null;
         try (DebugContext debug = command.getDebug(bb.getOptions(), bb.getDebugHandlerFactories());
                         Scope s = debug.scope("Operation");

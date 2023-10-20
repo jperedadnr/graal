@@ -28,7 +28,7 @@ import static com.oracle.svm.common.meta.MultiMethod.DEOPT_TARGET_METHOD;
 import static com.oracle.svm.common.meta.MultiMethod.ORIGINAL_METHOD;
 import static com.oracle.svm.hosted.code.SubstrateCompilationDirectives.RUNTIME_COMPILED_METHOD;
 import static com.oracle.svm.hosted.phases.InlineBeforeAnalysisPolicyUtils.Options.InlineBeforeAnalysisAllowedDepth;
-import static org.graalvm.compiler.java.BytecodeParserOptions.InlineDuringParsingMaxDepth;
+import static jdk.compiler.graal.java.BytecodeParserOptions.InlineDuringParsingMaxDepth;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -46,42 +46,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import jdk.compiler.graal.graph.NodeSourcePosition;
 import org.graalvm.collections.EconomicMap;
-import org.graalvm.compiler.core.common.PermanentBailoutException;
-import org.graalvm.compiler.core.common.spi.ConstantFieldProvider;
-import org.graalvm.compiler.debug.DebugContext;
-import org.graalvm.compiler.debug.DebugHandlersFactory;
-import org.graalvm.compiler.debug.Indent;
-import org.graalvm.compiler.graph.NodeClass;
-import org.graalvm.compiler.graph.NodeSourcePosition;
-import org.graalvm.compiler.java.BytecodeParser;
-import org.graalvm.compiler.java.GraphBuilderPhase;
-import org.graalvm.compiler.loop.phases.ConvertDeoptimizeToGuardPhase;
-import org.graalvm.compiler.nodes.CallTargetNode;
-import org.graalvm.compiler.nodes.FixedWithNextNode;
-import org.graalvm.compiler.nodes.FrameState;
-import org.graalvm.compiler.nodes.GraphEncoder;
-import org.graalvm.compiler.nodes.StateSplit;
-import org.graalvm.compiler.nodes.StructuredGraph;
-import org.graalvm.compiler.nodes.ValueNode;
-import org.graalvm.compiler.nodes.graphbuilderconf.GraphBuilderConfiguration;
-import org.graalvm.compiler.nodes.graphbuilderconf.GraphBuilderContext;
-import org.graalvm.compiler.nodes.graphbuilderconf.InlineInvokePlugin;
-import org.graalvm.compiler.nodes.graphbuilderconf.IntrinsicContext;
-import org.graalvm.compiler.nodes.graphbuilderconf.NodePlugin;
-import org.graalvm.compiler.nodes.java.ExceptionObjectNode;
-import org.graalvm.compiler.options.Option;
-import org.graalvm.compiler.options.OptionValues;
-import org.graalvm.compiler.phases.OptimisticOptimizations;
-import org.graalvm.compiler.phases.Phase;
-import org.graalvm.compiler.phases.PhaseSuite;
-import org.graalvm.compiler.phases.common.CanonicalizerPhase;
-import org.graalvm.compiler.phases.common.IterativeConditionalEliminationPhase;
-import org.graalvm.compiler.phases.tiers.HighTierContext;
-import org.graalvm.compiler.phases.util.Providers;
-import org.graalvm.compiler.printer.GraalDebugHandlersFactory;
-import org.graalvm.compiler.truffle.compiler.phases.DeoptimizeOnExceptionPhase;
-import org.graalvm.compiler.word.WordTypes;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.hosted.Feature;
 
@@ -107,7 +73,6 @@ import com.oracle.svm.core.graal.nodes.DeoptEntryNode;
 import com.oracle.svm.core.graal.nodes.DeoptEntrySupport;
 import com.oracle.svm.core.graal.nodes.DeoptProxyAnchorNode;
 import com.oracle.svm.core.graal.nodes.InlinedInvokeArgumentsNode;
-import com.oracle.svm.core.graal.stackvalue.StackValueNode;
 import com.oracle.svm.core.option.HostedOptionKey;
 import com.oracle.svm.core.option.HostedOptionValues;
 import com.oracle.svm.core.util.VMError;
@@ -131,6 +96,40 @@ import com.oracle.svm.hosted.phases.InlineBeforeAnalysisPolicyUtils.Accumulative
 import com.oracle.svm.hosted.phases.InlineBeforeAnalysisPolicyUtils.AlwaysInlineScope;
 import com.oracle.svm.hosted.phases.StrengthenStampsPhase;
 
+import jdk.compiler.graal.core.common.PermanentBailoutException;
+import jdk.compiler.graal.core.common.spi.ConstantFieldProvider;
+import jdk.compiler.graal.debug.DebugContext;
+import jdk.compiler.graal.debug.DebugHandlersFactory;
+import jdk.compiler.graal.debug.Indent;
+import jdk.compiler.graal.graph.NodeClass;
+import jdk.compiler.graal.java.BytecodeParser;
+import jdk.compiler.graal.java.GraphBuilderPhase;
+import jdk.compiler.graal.loop.phases.ConvertDeoptimizeToGuardPhase;
+import jdk.compiler.graal.nodes.CallTargetNode;
+import jdk.compiler.graal.nodes.FixedWithNextNode;
+import jdk.compiler.graal.nodes.FrameState;
+import jdk.compiler.graal.nodes.GraphEncoder;
+import jdk.compiler.graal.nodes.StateSplit;
+import jdk.compiler.graal.nodes.StructuredGraph;
+import jdk.compiler.graal.nodes.ValueNode;
+import jdk.compiler.graal.nodes.graphbuilderconf.GraphBuilderConfiguration;
+import jdk.compiler.graal.nodes.graphbuilderconf.GraphBuilderContext;
+import jdk.compiler.graal.nodes.graphbuilderconf.InlineInvokePlugin;
+import jdk.compiler.graal.nodes.graphbuilderconf.IntrinsicContext;
+import jdk.compiler.graal.nodes.graphbuilderconf.NodePlugin;
+import jdk.compiler.graal.nodes.java.ExceptionObjectNode;
+import jdk.compiler.graal.options.Option;
+import jdk.compiler.graal.options.OptionValues;
+import jdk.compiler.graal.phases.OptimisticOptimizations;
+import jdk.compiler.graal.phases.Phase;
+import jdk.compiler.graal.phases.PhaseSuite;
+import jdk.compiler.graal.phases.common.CanonicalizerPhase;
+import jdk.compiler.graal.phases.common.IterativeConditionalEliminationPhase;
+import jdk.compiler.graal.phases.tiers.HighTierContext;
+import jdk.compiler.graal.phases.util.Providers;
+import jdk.compiler.graal.printer.GraalDebugHandlersFactory;
+import jdk.compiler.graal.truffle.phases.DeoptimizeOnExceptionPhase;
+import jdk.compiler.graal.word.WordTypes;
 import jdk.vm.ci.code.BytecodeFrame;
 import jdk.vm.ci.code.BytecodePosition;
 import jdk.vm.ci.meta.JavaKind;
@@ -846,26 +845,17 @@ public class ParseOnceRuntimeCompilationFeature extends RuntimeCompilationFeatur
                     }
                 }
 
-                if (graph.getNodes(StackValueNode.TYPE).isNotEmpty()) {
-                    /*
-                     * Stack allocated memory is not seen by the deoptimization code, i.e., it is
-                     * not copied in case of deoptimization. Also, pointers to it can be used for
-                     * arbitrary address arithmetic, so we would not know how to update derived
-                     * pointers into stack memory during deoptimization. Therefore, we cannot allow
-                     * methods that allocate stack memory for runtime compilation. To remove this
-                     * limitation, we would need to change how we handle stack allocated memory in
-                     * Graal.
-                     */
-                    recordFailed(method);
-                    return HostVM.PARSING_FAILED;
-                }
-
                 CanonicalizerPhase canonicalizer = CanonicalizerPhase.create();
                 canonicalizer.apply(graph, analysisProviders);
                 if (deoptimizeOnExceptionPredicate != null) {
                     new DeoptimizeOnExceptionPhase(deoptimizeOnExceptionPredicate).apply(graph);
                 }
                 new ConvertDeoptimizeToGuardPhase(canonicalizer).apply(graph, analysisProviders);
+
+                if (DeoptimizationUtils.createGraphInvalidator(graph).get()) {
+                    recordFailed(method);
+                    return HostVM.PARSING_FAILED;
+                }
 
             } catch (Throwable ex) {
                 debug.handle(ex);
@@ -883,22 +873,13 @@ public class ParseOnceRuntimeCompilationFeature extends RuntimeCompilationFeatur
         public boolean validateGraph(PointsToAnalysis bb, StructuredGraph graph) {
             PointsToAnalysisMethod aMethod = (PointsToAnalysisMethod) graph.method();
             MultiMethod.MultiMethodKey multiMethodKey = aMethod.getMultiMethodKey();
-            Supplier<Boolean> hasStackValues = () -> graph.getNodes(StackValueNode.TYPE).isNotEmpty();
-            if (aMethod.isOriginalMethod() && DeoptimizationUtils.canDeoptForTesting(aMethod, false, hasStackValues)) {
+            Supplier<Boolean> graphInvalidator = DeoptimizationUtils.createGraphInvalidator(graph);
+            if (aMethod.isOriginalMethod() && DeoptimizationUtils.canDeoptForTesting(aMethod, false, graphInvalidator)) {
                 DeoptimizationUtils.registerDeoptEntriesForDeoptTesting(bb, graph, aMethod);
                 return true;
             }
             if (multiMethodKey != ORIGINAL_METHOD) {
-                if (hasStackValues.get()) {
-                    /*
-                     * Stack allocated memory is not seen by the deoptimization code, i.e., it is
-                     * not copied in case of deoptimization. Also, pointers to it can be used for
-                     * arbitrary address arithmetic, so we would not know how to update derived
-                     * pointers into stack memory during deoptimization. Therefore, we cannot allow
-                     * methods that allocate stack memory for runtime compilation. To remove this
-                     * limitation, we would need to change how we handle stack allocated memory in
-                     * Graal.
-                     */
+                if (graphInvalidator.get()) {
                     recordFailed(aMethod);
                     return false;
                 }

@@ -30,18 +30,18 @@ import java.util.List;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Function;
 
-import org.graalvm.compiler.api.replacements.SnippetReflectionProvider;
-import org.graalvm.compiler.debug.DebugContext;
-import org.graalvm.compiler.debug.DebugContext.Builder;
-import org.graalvm.compiler.debug.DebugHandlersFactory;
-import org.graalvm.compiler.debug.Indent;
-import org.graalvm.compiler.graph.Node;
-import org.graalvm.compiler.nodes.DeoptBciSupplier;
-import org.graalvm.compiler.nodes.StateSplit;
-import org.graalvm.compiler.nodes.ValueNode;
-import org.graalvm.compiler.options.OptionValues;
-import org.graalvm.compiler.printer.GraalDebugHandlersFactory;
-import org.graalvm.compiler.word.WordTypes;
+import jdk.compiler.graal.api.replacements.SnippetReflectionProvider;
+import jdk.compiler.graal.debug.DebugContext;
+import jdk.compiler.graal.debug.DebugContext.Builder;
+import jdk.compiler.graal.debug.DebugHandlersFactory;
+import jdk.compiler.graal.debug.Indent;
+import jdk.compiler.graal.graph.Node;
+import jdk.compiler.graal.nodes.DeoptBciSupplier;
+import jdk.compiler.graal.nodes.StateSplit;
+import jdk.compiler.graal.nodes.ValueNode;
+import jdk.compiler.graal.options.OptionValues;
+import jdk.compiler.graal.printer.GraalDebugHandlersFactory;
+import jdk.compiler.graal.word.WordTypes;
 import org.graalvm.nativeimage.hosted.Feature;
 
 import com.oracle.graal.pointsto.api.HostVM;
@@ -94,7 +94,6 @@ public abstract class AbstractAnalysisEngine implements BigBang {
      * Processing queue.
      */
     protected final CompletionExecutor executor;
-    private final Runnable heartbeatCallback;
 
     protected final Timer processFeaturesTimer;
     protected final Timer analysisTimer;
@@ -102,8 +101,8 @@ public abstract class AbstractAnalysisEngine implements BigBang {
 
     @SuppressWarnings("this-escape")
     public AbstractAnalysisEngine(OptionValues options, AnalysisUniverse universe, HostVM hostVM, AnalysisMetaAccess metaAccess, SnippetReflectionProvider snippetReflectionProvider,
-                    ConstantReflectionProvider constantReflectionProvider, WordTypes wordTypes, ForkJoinPool executorService, Runnable heartbeatCallback,
-                    UnsupportedFeatures unsupportedFeatures, TimerCollection timerCollection) {
+                    ConstantReflectionProvider constantReflectionProvider, WordTypes wordTypes, ForkJoinPool executorService, UnsupportedFeatures unsupportedFeatures,
+                    TimerCollection timerCollection) {
         this.options = options;
         this.universe = universe;
         this.debugHandlerFactories = Collections.singletonList(new GraalDebugHandlersFactory(snippetReflectionProvider));
@@ -111,8 +110,7 @@ public abstract class AbstractAnalysisEngine implements BigBang {
         this.metaAccess = metaAccess;
         this.analysisPolicy = universe.analysisPolicy();
         this.hostVM = hostVM;
-        this.executor = new CompletionExecutor(this, executorService, heartbeatCallback);
-        this.heartbeatCallback = heartbeatCallback;
+        this.executor = new CompletionExecutor(this, executorService);
         this.unsupportedFeatures = unsupportedFeatures;
 
         this.processFeaturesTimer = timerCollection.get(TimerCollection.Registry.FEATURES);
@@ -263,11 +261,6 @@ public abstract class AbstractAnalysisEngine implements BigBang {
     @Override
     public OptionValues getOptions() {
         return options;
-    }
-
-    @Override
-    public Runnable getHeartbeatCallback() {
-        return heartbeatCallback;
     }
 
     @Override
