@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,22 +22,14 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package jdk.graal.compiler.core.match;
+package com.oracle.graal.pointsto;
 
-import jdk.graal.compiler.core.gen.NodeMatchRules;
+import com.oracle.graal.pointsto.infrastructure.UniverseMetaAccess;
 
-/**
- * Code generator for complex match patterns.
- */
-public interface MatchGenerator {
-    /**
-     * @return null if the match can't be generated or a {@link ComplexMatchResult} that can be
-     *         evaluated during LIR generation to produce the final LIR value.
-     */
-    ComplexMatchResult match(NodeMatchRules matchRules, Object... args);
+import jdk.vm.ci.meta.ConstantReflectionProvider;
+import jdk.vm.ci.meta.JavaConstant;
+import jdk.vm.ci.meta.ResolvedJavaField;
 
-    /**
-     * @return a descriptive name meaningful to the user.
-     */
-    String getName();
+public interface ConstantReflectionProviderExtension<T extends ResolvedJavaField> extends ConstantReflectionProvider {
+    JavaConstant readHostedFieldValue(UniverseMetaAccess access, T field, JavaConstant receiver);
 }
