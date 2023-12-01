@@ -22,29 +22,31 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package jdk.graal.compiler.lir.amd64;
 
-import jdk.graal.compiler.asm.amd64.AMD64MacroAssembler;
-import jdk.graal.compiler.lir.LIRInstruction;
-import jdk.graal.compiler.lir.LIRInstructionClass;
-import jdk.graal.compiler.lir.Opcode;
-import jdk.graal.compiler.lir.asm.CompilationResultBuilder;
+// Finds the count of numbers that are smaller than the provided one.
 
-@Opcode("ENDBR64")
-public final class EndbranchOp extends AMD64LIRInstruction {
-    public static final LIRInstructionClass<EndbranchOp> TYPE = LIRInstructionClass.create(EndbranchOp.class);
+var data = [2, 3, 10, 1, 5, 20, 8, 18, 12, 30];
 
-    private EndbranchOp() {
-        super(TYPE);
+function binarySearch(array, element) {
+  let i1 = 0;
+  let i2 = array.length - 1;
+  while (i1 < i2) {
+    let i = (i1 + i2) >> 1;
+    let diff = array[i] - element;
+    if (diff > 0) {
+      i2 = i;
+    } else if (diff < 0) {
+      i1 = i;
+    } else {
+      return i;
     }
-
-    @Override
-    public void emitCode(CompilationResultBuilder crb, AMD64MacroAssembler masm) {
-        masm.endbranch();
-    }
-
-    public static LIRInstruction create() {
-        return new EndbranchOp();
-    }
-
+  }
+  return i1;
 }
+
+data = data.sort(function(a,b){return a - b});
+
+var index12 = binarySearch(data, 12);
+var index8 = binarySearch(data, 8);
+print('Index of element 12 is: ' + index12);
+print('Index of element 8 is: ' + index8);
