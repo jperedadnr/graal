@@ -864,15 +864,17 @@ public class NativeImage {
         final String envVarName = SubstrateOptions.NATIVE_IMAGE_OPTIONS_ENV_VAR;
         String nativeImageOptionsValue = System.getenv(envVarName);
         if (nativeImageOptionsValue != null) {
-            addPlainImageBuilderArg(oHNativeImageOptionsEnvVar + nativeImageOptionsValue);
             defaultNativeImageArgs.addAll(JDKArgsUtils.parseArgsFromEnvVar(nativeImageOptionsValue, envVarName, msg -> showError(msg)));
         }
         if (!defaultNativeImageArgs.isEmpty()) {
             String buildApplyOptionName = BundleSupport.BundleOptionVariants.apply.optionName();
             if (config.getBuildArgs().stream().noneMatch(arg -> arg.startsWith(buildApplyOptionName + "="))) {
+                if (nativeImageOptionsValue != null) {
+                    addPlainImageBuilderArg(oHNativeImageOptionsEnvVar + nativeImageOptionsValue);
+                }
                 return List.copyOf(defaultNativeImageArgs);
             } else {
-                LogUtils.warning("Option " + buildApplyOptionName + " in use. Ignoring args from file specified with environment variable " + NativeImage.CONFIG_FILE_ENV_VAR_KEY + ".");
+                LogUtils.warning("Option '" + buildApplyOptionName + "' in use. Ignoring environment variables " + envVarName + " and " + NativeImage.CONFIG_FILE_ENV_VAR_KEY + ".");
             }
         }
         return List.of();
@@ -1115,6 +1117,14 @@ public class NativeImage {
         // The following two are for backwards compatibility reasons. They should be removed.
         imageBuilderJavaArgs.add("-Djdk.internal.lambda.eagerlyInitialize=false");
         imageBuilderJavaArgs.add("-Djava.lang.invoke.InnerClassLambdaMetafactory.initializeLambdas=false");
+        /*
+         * DONT_INLINE_THRESHOLD is used to set a profiling threshold for certain method handles and
+         * only allow inlining after n invocations. This is used for example in the implementation
+         * of record equals methods. We disable this behavior in the image builder because it can
+         * prevent optimizing the method handles for AOT compilation if the threshold is not
+         * reached.
+         */
+        imageBuilderJavaArgs.add("-Djava.lang.invoke.MethodHandle.DONT_INLINE_THRESHOLD=-1");
 
         /* After JavaArgs consolidation add the user provided JavaArgs */
         boolean afterOption = false;
