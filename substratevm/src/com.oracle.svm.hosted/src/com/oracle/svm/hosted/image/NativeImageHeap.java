@@ -260,7 +260,7 @@ public final class NativeImageHeap implements ImageHeap {
         JavaConstant hostedReceiver = ((ImageHeapInstance) receiver).getHostedObject();
         /* Use the AnalysisConstantReflectionProvider to get direct access to hosted values. */
         AnalysisConstantReflectionProvider analysisConstantReflection = hConstantReflection.getWrappedConstantReflection();
-        return hUniverse.getSnippetReflection().asObject(Object.class, analysisConstantReflection.readHostedFieldValue(hMetaAccess, field.getWrapped(), hostedReceiver));
+        return hUniverse.getSnippetReflection().asObject(Object.class, analysisConstantReflection.readHostedFieldValueWithReplacement(field.getWrapped(), hostedReceiver));
     }
 
     private JavaConstant readConstantField(HostedField field, JavaConstant receiver) {
@@ -452,6 +452,15 @@ public final class NativeImageHeap implements ImageHeap {
         boolean written = false;
         boolean references = false;
         boolean relocatable = false; /* always false when !spawnIsolates() */
+
+        if (!type.isInstantiated()) {
+            StringBuilder msg = new StringBuilder();
+            msg.append("Image heap writing found an object whose type was not marked as instantiated by the static analysis: ");
+            msg.append(type.toJavaName(true)).append("  (").append(type).append(")");
+            msg.append(System.lineSeparator()).append("  reachable through:").append(System.lineSeparator());
+            fillReasonStack(msg, reason);
+            VMError.shouldNotReachHere(msg.toString());
+        }
 
         if (type.isInstanceClass()) {
             final HostedInstanceClass clazz = (HostedInstanceClass) type;
