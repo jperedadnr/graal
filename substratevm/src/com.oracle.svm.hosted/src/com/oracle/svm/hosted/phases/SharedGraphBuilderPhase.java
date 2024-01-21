@@ -60,7 +60,7 @@ import com.oracle.svm.core.graal.nodes.DeoptEntryBeginNode;
 import com.oracle.svm.core.graal.nodes.DeoptEntryNode;
 import com.oracle.svm.core.graal.nodes.DeoptEntrySupport;
 import com.oracle.svm.core.graal.nodes.DeoptProxyAnchorNode;
-import com.oracle.svm.core.graal.nodes.LazyConstantNode;
+import com.oracle.svm.core.graal.nodes.FieldOffsetNode;
 import com.oracle.svm.core.graal.nodes.LoweredDeadEndNode;
 import com.oracle.svm.core.hub.DynamicHub;
 import com.oracle.svm.core.meta.DirectSubstrateObjectConstant;
@@ -70,11 +70,9 @@ import com.oracle.svm.core.util.UserError.UserException;
 import com.oracle.svm.core.util.VMError;
 import com.oracle.svm.hosted.ExceptionSynthesizer;
 import com.oracle.svm.hosted.LinkAtBuildTimeSupport;
-import com.oracle.svm.hosted.ameta.AnalysisConstantReflectionProvider;
 import com.oracle.svm.hosted.code.FactoryMethodSupport;
 import com.oracle.svm.hosted.code.SubstrateCompilationDirectives;
 import com.oracle.svm.hosted.nodes.DeoptProxyNode;
-import com.oracle.svm.hosted.snippets.SubstrateGraphBuilderPlugins.FieldOffsetConstantProvider;
 import com.oracle.svm.util.ReflectionUtil;
 
 import jdk.graal.compiler.api.replacements.Fold;
@@ -86,7 +84,6 @@ import jdk.graal.compiler.core.common.type.StampPair;
 import jdk.graal.compiler.core.common.type.TypeReference;
 import jdk.graal.compiler.debug.GraalError;
 import jdk.graal.compiler.graph.Node.NodeIntrinsic;
-import jdk.graal.compiler.graph.NodeSourcePosition;
 import jdk.graal.compiler.java.BciBlockMapping;
 import jdk.graal.compiler.java.BytecodeParser;
 import jdk.graal.compiler.java.FrameStateBuilder;
@@ -974,7 +971,6 @@ public abstract class SharedGraphBuilderPhase extends GraphBuilderPhase.Instance
              */
             protected Object resolveLinkedObject(int bci, int cpi, int opcode, BootstrapMethodIntrospection bootstrap, int parameterLength, List<JavaConstant> staticArgumentsList,
                             boolean isVarargs, boolean isPrimitiveConstant) {
-                AnalysisConstantReflectionProvider analysisConstantReflection = (AnalysisConstantReflectionProvider) getConstantReflection();
                 ResolvedJavaMethod bootstrapMethod = bootstrap.getMethod();
 
                 /* Step 1: Initialize the BootstrapMethodInfo. */
@@ -982,7 +978,7 @@ public abstract class SharedGraphBuilderPhase extends GraphBuilderPhase.Instance
                 BootstrapMethodRecord bootstrapMethodRecord = new BootstrapMethodRecord(bci, cpi, ((AnalysisMethod) method).getMultiMethod(MultiMethod.ORIGINAL_METHOD));
                 BootstrapMethodInfo bootstrapMethodInfo = BootstrapMethodConfiguration.singleton().getBootstrapMethodInfoCache().computeIfAbsent(bootstrapMethodRecord,
                                 key -> new BootstrapMethodInfo());
-                ConstantNode bootstrapMethodInfoNode = ConstantNode.forConstant(analysisConstantReflection.forObject(bootstrapMethodInfo), getMetaAccess(), getGraph());
+                ConstantNode bootstrapMethodInfoNode = ConstantNode.forConstant(getSnippetReflection().forObject(bootstrapMethodInfo), getMetaAccess(), getGraph());
 
                 /*
                  * Step 2: Check if the call site or the constant is linked or if it previously
@@ -1021,7 +1017,7 @@ public abstract class SharedGraphBuilderPhase extends GraphBuilderPhase.Instance
                             /* A nested constant dynamic threw. */
                             return argConstant;
                         } else {
-                            currentNode = ConstantNode.forConstant(analysisConstantReflection.forObject(argConstant), getMetaAccess(), getGraph());
+                            currentNode = ConstantNode.forConstant(getSnippetReflection().forObject(argConstant), getMetaAccess(), getGraph());
                         }
                     } else {
                         /*
@@ -1054,7 +1050,7 @@ public abstract class SharedGraphBuilderPhase extends GraphBuilderPhase.Instance
                  */
 
                 addArgument(isVarargs, arguments, 0, lookupNode);
-                ConstantNode bootstrapName = ConstantNode.forConstant(analysisConstantReflection.forString(bootstrap.getName()), getMetaAccess(), getGraph());
+                ConstantNode bootstrapName = ConstantNode.forConstant(getConstantReflection().forString(bootstrap.getName()), getMetaAccess(), getGraph());
                 addArgument(isVarargs, arguments, 1, bootstrapName);
                 addArgument(isVarargs, arguments, 2, ConstantNode.forConstant(bootstrap.getType(), getMetaAccess(), getGraph()));
 
@@ -1105,17 +1101,11 @@ public abstract class SharedGraphBuilderPhase extends GraphBuilderPhase.Instance
                  */
 
                 ConstantNode nullConstant = ConstantNode.forConstant(JavaConstant.NULL_POINTER, getMetaAccess(), getGraph());
-                ValueNode offset = graph.addOrUniqueWithInputs(
-                                LazyConstantNode.create(StampFactory.forKind(JavaKind.Long), new FieldOffsetConstantProvider(bootstrapObjectField), SharedBytecodeParser.this));
+                ValueNode offset = graph.addOrUniqueWithInputs(FieldOffsetNode.create(JavaKind.Long, bootstrapObjectResolvedField));
                 FieldLocationIdentity fieldLocationIdentity = new FieldLocationIdentity(bootstrapObjectResolvedField);
                 FixedWithNextNode linkBootstrapObject = graph.add(
                                 new UnsafeCompareAndSwapNode(bootstrapMethodInfoNode, offset, nullConstant, finalBootstrapObjectNode, JavaKind.Object, fieldLocationIdentity, MemoryOrderMode.RELEASE));
                 ((StateSplit) linkBootstrapObject).setStateAfter(createFrameState(stream.nextBCI(), (StateSplit) linkBootstrapObject));
-
-                NodeSourcePosition nodeSourcePosition = getGraph().currentNodeSourcePosition();
-                Object reason = nodeSourcePosition == null ? "Unknown graph builder location." : nodeSourcePosition;
-                bootstrapObjectResolvedField.registerAsAccessed(reason);
-                bootstrapObjectResolvedField.registerAsUnsafeAccessed(reason);
 
                 EndNode trueEnd = graph.add(new EndNode());
 

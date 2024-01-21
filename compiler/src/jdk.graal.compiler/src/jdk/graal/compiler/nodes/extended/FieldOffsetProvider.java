@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,12 +22,19 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package com.oracle.graal.pointsto;
+package jdk.graal.compiler.nodes.extended;
 
-import jdk.vm.ci.meta.ConstantReflectionProvider;
-import jdk.vm.ci.meta.JavaConstant;
+import jdk.graal.compiler.nodes.ConstantNode;
+import jdk.graal.compiler.nodes.ValueNodeInterface;
 import jdk.vm.ci.meta.ResolvedJavaField;
 
-public interface ConstantReflectionProviderExtension<T extends ResolvedJavaField> extends ConstantReflectionProvider {
-    JavaConstant readHostedFieldValueWithReplacement(T field, JavaConstant receiver);
+/**
+ * Interface that can be implemented by nodes that compute the offset of a field, but cannot expose
+ * the offset as a {@link ConstantNode} yet. The provided field can be used by the compiler to
+ * convert low-level memory access nodes to high-level field access nodes.
+ */
+public interface FieldOffsetProvider extends ValueNodeInterface {
+
+    /** The field whose offset this node is computing. */
+    ResolvedJavaField getField();
 }
