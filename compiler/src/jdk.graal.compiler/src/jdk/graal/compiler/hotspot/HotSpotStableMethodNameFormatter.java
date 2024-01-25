@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,33 +22,23 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package com.oracle.svm.core.heapdump;
+package jdk.graal.compiler.hotspot;
 
-import java.io.FileOutputStream;
+import jdk.graal.compiler.debug.DebugContext;
+import jdk.graal.compiler.java.GraphBuilderPhase;
+import jdk.graal.compiler.java.StableMethodNameFormatter;
+import jdk.graal.compiler.phases.util.Providers;
 
-import com.oracle.svm.core.heap.dump.HeapDumping;
+/**
+ * A simple wrapper that creates the right subclass of {@link GraphBuilderPhase}.
+ */
+public class HotSpotStableMethodNameFormatter extends StableMethodNameFormatter {
 
-/* Legacy implementation, only used by other legacy code (see GR-44538). */
-public class HeapDumpSupportImpl extends HeapDumping {
-    @Override
-    public void initializeDumpHeapOnOutOfMemoryError() {
-        /* Nothing to do. */
+    public HotSpotStableMethodNameFormatter(Providers providers, DebugContext debug) {
+        this(providers, debug, false);
     }
 
-    @Override
-    public void teardownDumpHeapOnOutOfMemoryError() {
-        /* Nothing to do. */
-    }
-
-    @Override
-    public void dumpHeapOnOutOfMemoryError() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void dumpHeap(String outputFile, boolean live) throws java.io.IOException {
-        try (FileOutputStream fileOutputStream = new FileOutputStream(outputFile)) {
-            com.oracle.svm.core.heapdump.HeapDumpWriter.singleton().writeHeapTo(fileOutputStream, live);
-        }
+    public HotSpotStableMethodNameFormatter(Providers providers, DebugContext debug, boolean considerMH) {
+        super(new HotSpotGraphBuilderPhase(getGraphBuilderConfiguration()), providers, debug, considerMH);
     }
 }
