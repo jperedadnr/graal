@@ -930,8 +930,7 @@ public class NativeImageGenerator {
 
                 AnalysisMetaAccess aMetaAccess = new SVMAnalysisMetaAccess(aUniverse, originalMetaAccess);
                 SubstratePlatformConfigurationProvider platformConfig = getPlatformConfig(aMetaAccess);
-                HostedProviders aProviders = createHostedProviders(target, aUniverse,
-                                originalProviders, platformConfig, classInitializationSupport, aMetaAccess);
+                HostedProviders aProviders = createHostedProviders(target, aUniverse, originalProviders, platformConfig, aMetaAccess);
                 aUniverse.hostVM().initializeProviders(aProviders);
 
                 ImageSingletons.add(SimulateClassInitializerSupport.class, ((SVMHost) aUniverse.hostVM()).createSimulateClassInitializerSupport(aMetaAccess));
@@ -1165,10 +1164,8 @@ public class NativeImageGenerator {
         }
     }
 
-    @SuppressWarnings("unused")
     private static HostedProviders createHostedProviders(TargetDescription target, AnalysisUniverse aUniverse,
-                    Providers originalProviders, SubstratePlatformConfigurationProvider platformConfig, ClassInitializationSupport classInitializationSupport,
-                    AnalysisMetaAccess aMetaAccess) {
+                    Providers originalProviders, SubstratePlatformConfigurationProvider platformConfig, AnalysisMetaAccess aMetaAccess) {
 
         ForeignCallsProvider aForeignCalls = new SubstrateForeignCallsProvider(aMetaAccess, null);
         AnalysisConstantFieldProvider aConstantFieldProvider = new AnalysisConstantFieldProvider(aMetaAccess, (SVMHost) aUniverse.hostVM());
@@ -1372,7 +1369,7 @@ public class NativeImageGenerator {
                 plugins.appendNodePlugin(new MethodHandleWithExceptionPlugin(providers.getConstantReflection().getMethodHandleAccess(), false));
             }
         } else {
-            plugins.appendNodePlugin(new IntrinsifyMethodHandlesInvocationPlugin(reason, hostedSnippetReflection, providers, aUniverse, hUniverse));
+            plugins.appendNodePlugin(new IntrinsifyMethodHandlesInvocationPlugin(hostedSnippetReflection, providers, aUniverse, hUniverse));
         }
         plugins.appendNodePlugin(new DeletedFieldsPlugin());
         plugins.appendNodePlugin(new InjectedAccessorsPlugin());
@@ -1556,16 +1553,11 @@ public class NativeImageGenerator {
         BasePhase<CoreProviders> addressLoweringPhase = backend.newAddressLoweringPhase(runtimeCallProviders.getCodeCache());
         lowTier.replacePlaceholder(AddressLoweringPhase.class, addressLoweringPhase);
 
-        if (SubstrateOptions.MultiThreaded.getValue()) {
-            /*
-             * Graal inserts only loop safepoints. We want a SafepointNode also before every return.
-             * Our safepoint insertion phase inserts both kinds of safepoints.
-             */
-            midTier.findPhase(LoopSafepointInsertionPhase.class).set(new SubstrateSafepointInsertionPhase());
-        } else {
-            /* No need for safepoints when we have only one thread. */
-            VMError.guarantee(midTier.removePhase(LoopSafepointInsertionPhase.class));
-        }
+        /*
+         * Graal inserts only loop safepoints. We want a SafepointNode also before every return. Our
+         * safepoint insertion phase inserts both kinds of safepoints.
+         */
+        midTier.findPhase(LoopSafepointInsertionPhase.class).set(new SubstrateSafepointInsertionPhase());
 
         if (hosted) {
             lowTier.appendPhase(new VerifyNoGuardsPhase());

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,19 +22,25 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package com.oracle.svm.core.threadlocal;
+package com.oracle.svm.core.foreign;
 
-import org.graalvm.nativeimage.Platform;
-import org.graalvm.nativeimage.Platforms;
+import com.oracle.svm.core.annotate.Alias;
+import com.oracle.svm.core.annotate.RecomputeFieldValue;
+import com.oracle.svm.core.annotate.TargetClass;
 
-import com.oracle.svm.core.BuildPhaseProvider.ReadyForCompilation;
-import com.oracle.svm.core.heap.UnknownObjectField;
+import jdk.internal.foreign.abi.AbstractLinker;
 
-public class VMThreadLocalSTSupport {
-    @UnknownObjectField(availability = ReadyForCompilation.class) public Object[] objectThreadLocals;
-    @UnknownObjectField(availability = ReadyForCompilation.class) public byte[] primitiveThreadLocals;
+@TargetClass(AbstractLinker.class)
+public final class Target_jdk_internal_foreign_abi_AbstractLinker {
+    @Alias //
+    @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.NewInstance, declClassName = "jdk.internal.foreign.abi.SoftReferenceCache") //
+    private Target_jdk_internal_foreign_abi_SoftReferenceCache DOWNCALL_CACHE;
 
-    @Platforms(Platform.HOSTED_ONLY.class)
-    public VMThreadLocalSTSupport() {
-    }
+    @Alias //
+    @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.NewInstance, declClassName = "jdk.internal.foreign.abi.SoftReferenceCache") //
+    private Target_jdk_internal_foreign_abi_SoftReferenceCache UPCALL_CACHE;
+}
+
+@TargetClass(className = "jdk.internal.foreign.abi.SoftReferenceCache")
+final class Target_jdk_internal_foreign_abi_SoftReferenceCache {
 }
