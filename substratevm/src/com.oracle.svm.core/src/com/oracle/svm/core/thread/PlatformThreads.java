@@ -433,8 +433,9 @@ public abstract class PlatformThreads {
         }
 
         /*
-         * First of all, ensure we are in RUNNABLE state. If !manuallyStarted, we race with the
-         * thread that launched us to set the status and we could still be in status NEW.
+         * First of all, ensure we are in RUNNABLE state. If this thread was started by the current
+         * isolate, we race with the thread that launched us to set the status and we could still be
+         * in status NEW.
          */
         setThreadStatus(thread, ThreadStatus.RUNNABLE);
         assignCurrent0(thread);
@@ -473,28 +474,8 @@ public abstract class PlatformThreads {
          */
     }
 
-    /**
-     * Tear down all application threads (except the current one). This is called from an
-     * {@link CEntryPoint} exit action.
-     *
-     * @return true if the application threads have been torn down, false otherwise.
-     */
-    public boolean tearDown() {
-        /* Tell all the threads that the VM is being torn down. */
-        boolean result = tearDownPlatformThreads();
-
-        // Detach last thread data
-        Thread thread = currentThread.get(CurrentIsolate.getCurrentThread());
-        if (thread != null) {
-            toTarget(thread).threadData.detach();
-        }
-        return result;
-    }
-
     @Uninterruptible(reason = "Thread is detaching and holds the THREAD_MUTEX.")
-    public static void detachThread(IsolateThread vmThread) {
-        assert VMThreads.THREAD_MUTEX.isOwner(true);
-
+    public static void detach(IsolateThread vmThread) {
         Thread thread = currentThread.get(vmThread);
         if (thread != null) {
             toTarget(thread).threadData.detach();
@@ -562,7 +543,7 @@ public abstract class PlatformThreads {
     }
 
     /** Have each thread, except this one, tear itself down. */
-    private static boolean tearDownPlatformThreads() {
+    public static boolean tearDownOtherThreads() {
         final Log trace = Log.noopLog().string("[PlatformThreads.tearDownPlatformThreads:").newline().flush();
 
         /*
@@ -582,7 +563,8 @@ public abstract class PlatformThreads {
         Set<ExecutorService> pools = Collections.newSetFromMap(new IdentityHashMap<>());
         Set<ExecutorService> poolsWithNonDaemons = Collections.newSetFromMap(new IdentityHashMap<>());
         for (Thread thread : threads) {
-            if (thread == null || thread == currentThread.get()) {
+            assert thread != null;
+            if (thread == currentThread.get()) {
                 continue;
             }
 

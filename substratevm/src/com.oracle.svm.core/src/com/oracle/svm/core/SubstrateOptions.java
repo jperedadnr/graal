@@ -373,8 +373,8 @@ public class SubstrateOptions {
     @Option(help = "The size of each thread stack at run-time, in bytes.", type = OptionType.User)//
     public static final RuntimeOptionKey<Long> StackSize = new RuntimeOptionKey<>(0L);
 
-    @Option(help = "The size of each internal thread stack, in bytes.", type = OptionType.Expert)//
-    public static final HostedOptionKey<Long> InternalThreadStackSize = new HostedOptionKey<>(2L * 1024 * 1024);
+    @Option(help = "Deprecated, has no effect.", deprecated = true) //
+    public static final HostedOptionKey<Long> InternalThreadStackSize = new HostedOptionKey<>(0L);
 
     /**
      * Cached value of {@link ConcealedOptions#MaxJavaStackTraceDepth}. Also used as default value.
@@ -815,6 +815,9 @@ public class SubstrateOptions {
          */
         return supportCompileInIsolates() && ConcealedOptions.CompileInIsolates.getValue();
     }
+
+    @Option(help = "Options that are passed to each compilation isolate. Individual arguments are separated by spaces. Arguments that contain spaces need to be enclosed by single quotes.") //
+    public static final RuntimeOptionKey<String> CompilationIsolateOptions = new RuntimeOptionKey<>(null);
 
     @Option(help = "Size of the reserved address space of each compilation isolate (0: default for new isolates).") //
     public static final RuntimeOptionKey<Long> CompilationIsolateAddressSpaceSize = new RuntimeOptionKey<>(0L);
