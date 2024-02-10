@@ -1,10 +1,11 @@
 /*
  * Copyright (c) 2023, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2023, Red Hat Inc. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation. Oracle designates this
+ * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
  * by Oracle in the LICENSE file that accompanied this code.
  *
@@ -22,35 +23,13 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
+package com.oracle.svm.core.jfr.throttling;
 
-#ifndef _WIN64
+import com.oracle.svm.core.annotate.Alias;
+import com.oracle.svm.core.annotate.TargetClass;
+import com.oracle.svm.core.jfr.HasJfrSupport;
 
-#include <stdio.h>
-#include <fcntl.h>
-
-/* On some platforms the varargs calling convention doesn't match regular calls
- * (e.g. darwin-aarch64 or linux-riscv). Instead of implementing varargs
- * support for @CFunction we add C helpers so that the C compiler resolves the
- * ABI specifics for us.
- */
-
-int fprintfSD(FILE *stream, const char *format, char *arg0, int arg1)
-{
-    return fprintf(stream, format, arg0, arg1);
+@TargetClass(className = "jdk.jfr.internal.settings.ThrottleSetting", onlyWith = HasJfrSupport.class)
+final class Target_jdk_jfr_internal_settings_ThrottleSetting {
+    @Alias static long OFF;
 }
-
-/* open(2) has a variadic signature on POSIX:
- *
- *    int open(const char *path, int oflag, ...);
- */
-int openSII(const char *pathname, int flags, int mode)
-{
-    return open(pathname, flags, mode);
-}
-
-int openatISII(int dirfd, const char *pathname, int flags, int mode)
-{
-    return openat(dirfd, pathname, flags, mode);
-}
-
-#endif

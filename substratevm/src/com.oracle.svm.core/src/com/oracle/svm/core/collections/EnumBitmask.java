@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2023, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation. Oracle designates this
+ * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
  * by Oracle in the LICENSE file that accompanied this code.
  *
@@ -22,35 +22,33 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
+package com.oracle.svm.core.collections;
 
-#ifndef _WIN64
+import static com.oracle.svm.core.Uninterruptible.CALLED_FROM_UNINTERRUPTIBLE_CODE;
 
-#include <stdio.h>
-#include <fcntl.h>
+import com.oracle.svm.core.Uninterruptible;
 
-/* On some platforms the varargs calling convention doesn't match regular calls
- * (e.g. darwin-aarch64 or linux-riscv). Instead of implementing varargs
- * support for @CFunction we add C helpers so that the C compiler resolves the
- * ABI specifics for us.
- */
+public final class EnumBitmask {
+    private EnumBitmask() {
+    }
 
-int fprintfSD(FILE *stream, const char *format, char *arg0, int arg1)
-{
-    return fprintf(stream, format, arg0, arg1);
+    public static int computeBitmask(Enum<?>[] flags) {
+        int result = 0;
+        for (Enum<?> flag : flags) {
+            assert flag.ordinal() <= Integer.SIZE - 1;
+            result |= flagBit(flag);
+        }
+        return result;
+    }
+
+    @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
+    public static boolean hasBit(int bitmask, Enum<?> flag) {
+        return (bitmask & flagBit(flag)) != 0;
+    }
+
+    @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
+    private static int flagBit(Enum<?> flag) {
+        assert flag.ordinal() < 32;
+        return 1 << flag.ordinal();
+    }
 }
-
-/* open(2) has a variadic signature on POSIX:
- *
- *    int open(const char *path, int oflag, ...);
- */
-int openSII(const char *pathname, int flags, int mode)
-{
-    return open(pathname, flags, mode);
-}
-
-int openatISII(int dirfd, const char *pathname, int flags, int mode)
-{
-    return openat(dirfd, pathname, flags, mode);
-}
-
-#endif
