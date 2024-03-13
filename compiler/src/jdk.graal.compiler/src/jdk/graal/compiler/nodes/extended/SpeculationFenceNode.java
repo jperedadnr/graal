@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,31 +22,30 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package com.oracle.svm.hosted;
+package jdk.graal.compiler.nodes.extended;
 
-import org.graalvm.nativeimage.hosted.Feature;
+import jdk.graal.compiler.core.common.type.StampFactory;
+import jdk.graal.compiler.graph.NodeClass;
+import jdk.graal.compiler.nodeinfo.NodeCycles;
+import jdk.graal.compiler.nodeinfo.NodeInfo;
+import jdk.graal.compiler.nodeinfo.NodeSize;
+import jdk.graal.compiler.nodes.FixedWithNextNode;
+import jdk.graal.compiler.nodes.spi.LIRLowerable;
+import jdk.graal.compiler.nodes.spi.NodeLIRBuilderTool;
 
-import com.oracle.svm.core.SubstrateOptions;
-import com.oracle.svm.core.feature.AutomaticallyRegisteredFeature;
-import com.oracle.svm.core.feature.InternalFeature;
-import com.oracle.svm.core.hub.DynamicHub;
-import com.oracle.svm.hosted.meta.HostedType;
+@NodeInfo(cycles = NodeCycles.CYCLES_4, size = NodeSize.SIZE_4)
+public class SpeculationFenceNode extends FixedWithNextNode implements LIRLowerable {
+    public static final NodeClass<SpeculationFenceNode> TYPE = NodeClass.create(SpeculationFenceNode.class);
 
-@AutomaticallyRegisteredFeature
-public class OpenTypeWorldFeature implements InternalFeature {
-
-    @Override
-    public boolean isInConfiguration(Feature.IsInConfigurationAccess access) {
-        return !SubstrateOptions.closedTypeWorld();
-
+    public SpeculationFenceNode() {
+        super(TYPE, StampFactory.forVoid());
     }
 
     @Override
-    public void beforeCompilation(BeforeCompilationAccess access) {
-        var impl = (FeatureImpl.BeforeCompilationAccessImpl) access;
-        for (HostedType type : impl.getUniverse().getTypes()) {
-            DynamicHub hub = type.getHub();
-            impl.registerAsImmutable(hub.getOpenTypeWorldTypeCheckSlots());
-        }
+    public void generate(NodeLIRBuilderTool generator) {
+        generator.getLIRGeneratorTool().emitSpeculationFence();
     }
+
+    @NodeIntrinsic
+    public static native void memoryBarrier();
 }
