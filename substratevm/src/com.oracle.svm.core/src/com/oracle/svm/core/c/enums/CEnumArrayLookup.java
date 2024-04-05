@@ -22,26 +22,26 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package com.oracle.svm.hosted.c.info;
+package com.oracle.svm.core.c.enums;
 
-import jdk.vm.ci.meta.ResolvedJavaMethod;
+import jdk.graal.compiler.core.common.calc.UnsignedMath;
 
-public class EnumLookupInfo extends ElementInfo {
+public class CEnumArrayLookup extends CEnumRuntimeData {
+    private final long cOffset;
+    private final Enum<?>[] cToJava;
 
-    private final ResolvedJavaMethod annotatedMethod;
-
-    public EnumLookupInfo(ResolvedJavaMethod annotatedMethod) {
-        super(annotatedMethod.getName());
-        this.annotatedMethod = annotatedMethod;
+    public CEnumArrayLookup(long[] javaToC, int bytesInC, boolean isCValueUnsigned, long cOffset, Enum<?>[] cToJava) {
+        super(javaToC, bytesInC, isCValueUnsigned);
+        this.cOffset = cOffset;
+        this.cToJava = cToJava;
     }
 
     @Override
-    public ResolvedJavaMethod getAnnotatedElement() {
-        return annotatedMethod;
-    }
-
-    @Override
-    public void accept(InfoTreeVisitor visitor) {
-        visitor.visitEnumLookupInfo(this);
+    protected Enum<?> lookupEnum(long value) {
+        long arrayIdx = value - cOffset;
+        if (UnsignedMath.aboveOrEqual(arrayIdx, cToJava.length)) {
+            return null;
+        }
+        return cToJava[(int) arrayIdx];
     }
 }

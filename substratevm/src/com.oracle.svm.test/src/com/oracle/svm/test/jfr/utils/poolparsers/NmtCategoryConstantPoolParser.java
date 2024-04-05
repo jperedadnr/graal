@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2019, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2024, Red Hat Inc. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,8 +24,27 @@
  * questions.
  */
 
-@Platforms(Platform.HOSTED_ONLY.class)
-package com.oracle.svm.hosted.cenum;
+package com.oracle.svm.test.jfr.utils.poolparsers;
 
-import org.graalvm.nativeimage.Platform;
-import org.graalvm.nativeimage.Platforms;
+import java.io.IOException;
+
+import org.junit.Assert;
+
+import com.oracle.svm.test.jfr.utils.JfrFileParser;
+import com.oracle.svm.test.jfr.utils.RecordingInput;
+
+public class NmtCategoryConstantPoolParser extends AbstractSerializerParser {
+    public NmtCategoryConstantPoolParser(JfrFileParser parser) {
+        super(parser);
+    }
+
+    @Override
+    public void parse(RecordingInput input) throws IOException {
+        int count = input.readInt();
+        Assert.assertTrue(count > 0);
+        for (int i = 0; i < count; i++) {
+            addFoundId(input.readInt());
+            Assert.assertFalse("NMT category name is empty!", input.readUTF().isBlank());
+        }
+    }
+}

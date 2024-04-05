@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2014, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2024, Red Hat Inc. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,26 +23,28 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package com.oracle.svm.hosted.c.info;
 
-import jdk.vm.ci.meta.ResolvedJavaMethod;
+package com.oracle.svm.core.jfr;
 
-public class EnumValueInfo extends ElementInfo {
+import org.graalvm.nativeimage.Platform;
+import org.graalvm.nativeimage.Platforms;
 
-    private final ResolvedJavaMethod annotatedMethod;
+import com.oracle.svm.core.nmt.NmtCategory;
 
-    public EnumValueInfo(ResolvedJavaMethod annotatedMethod) {
-        super(annotatedMethod.getName());
-        this.annotatedMethod = annotatedMethod;
+public class JfrNmtCategorySerializer implements JfrSerializer {
+    @Platforms(Platform.HOSTED_ONLY.class)
+    public JfrNmtCategorySerializer() {
     }
 
     @Override
-    public ResolvedJavaMethod getAnnotatedElement() {
-        return annotatedMethod;
-    }
+    public void write(JfrChunkWriter writer) {
+        writer.writeCompressedLong(JfrType.NMTType.getId());
 
-    @Override
-    public void accept(InfoTreeVisitor visitor) {
-        visitor.visitEnumValueInfo(this);
+        NmtCategory[] nmtCategories = NmtCategory.values();
+        writer.writeCompressedLong(nmtCategories.length);
+        for (NmtCategory nmtCategory : nmtCategories) {
+            writer.writeCompressedInt(nmtCategory.ordinal());
+            writer.writeString(nmtCategory.getName());
+        }
     }
 }

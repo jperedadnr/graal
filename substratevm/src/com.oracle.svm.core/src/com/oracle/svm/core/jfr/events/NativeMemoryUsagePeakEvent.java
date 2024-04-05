@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2019, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2024, Red Hat Inc. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,9 +23,26 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
+package com.oracle.svm.core.jfr.events;
 
-@Platforms(Platform.HOSTED_ONLY.class)
-package com.oracle.svm.hosted.c.query;
+import jdk.jfr.Category;
+import jdk.jfr.Description;
+import jdk.jfr.Event;
+import jdk.jfr.Experimental;
+import jdk.jfr.Label;
+import jdk.jfr.Name;
+import jdk.jfr.StackTrace;
 
-import org.graalvm.nativeimage.Platform;
-import org.graalvm.nativeimage.Platforms;
+/** Similar to the JFR event jdk.NativeMemoryUsage, except that it tracks the peak usage. */
+@Experimental
+@Name("jdk.NativeMemoryUsagePeak")
+@Label("Native Memory Usage Peak")
+@Description("Native memory peak usage for a given memory type in the JVM (GraalVM Native Image only).")
+@Category({"Java Virtual Machine", "Memory"})
+@StackTrace(false)
+public class NativeMemoryUsagePeakEvent extends Event {
+    @Label("Memory Type") public String type;
+    @Label("Peak Reserved") public long peakReserved;
+    @Label("Peak Committed") public long peakCommitted;
+    @Label("Count At Peak") public long countAtPeak;
+}

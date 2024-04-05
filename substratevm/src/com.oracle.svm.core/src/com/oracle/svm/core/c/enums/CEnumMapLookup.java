@@ -24,14 +24,18 @@
  */
 package com.oracle.svm.core.c.enums;
 
-public class EnumNoLookup extends EnumRuntimeData {
+import java.util.Map;
 
-    public EnumNoLookup(long[] javaToC) {
-        super(javaToC);
+public class CEnumMapLookup extends CEnumRuntimeData {
+    private final Map<Long, Enum<?>> cToJava;
+
+    public CEnumMapLookup(long[] javaToC, int bytesInC, boolean isCValueUnsigned, Map<Long, Enum<?>> cToJava) {
+        super(javaToC, bytesInC, isCValueUnsigned);
+        this.cToJava = cToJava;
     }
 
     @Override
-    protected Enum<?> convertCToJava(long cValue) {
-        return null;
+    protected Enum<?> lookupEnum(long value) {
+        return cToJava.get(value);
     }
 }
