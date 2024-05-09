@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,26 +22,13 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package com.oracle.graal.pointsto.api;
+package com.oracle.svm.truffle.nfi;
 
-import com.oracle.svm.util.UnsafePartitionKind;
+import com.oracle.svm.core.annotate.Alias;
+import com.oracle.svm.core.annotate.TargetClass;
 
-/**
- * Marker for default unsafe accesses.
- */
-public final class DefaultUnsafePartition implements UnsafePartitionKind {
+@TargetClass(className = "com.oracle.truffle.nfi.backend.spi.NFIState", onlyWith = TruffleNFIFeature.IsEnabled.class)
+final class Target_com_oracle_truffle_nfi_backend_spi_NFIState {
 
-    private static final DefaultUnsafePartition thisPartition = new DefaultUnsafePartition();
-
-    private DefaultUnsafePartition() {
-    }
-
-    public static UnsafePartitionKind get() {
-        return thisPartition;
-    }
-
-    @Override
-    public String toString() {
-        return "DEFAULT";
-    }
+    @Alias boolean hasPendingException;
 }
