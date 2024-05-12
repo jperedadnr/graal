@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,24 +22,15 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package micro.benchmarks;
+package com.oracle.svm.core.layeredimagesingleton;
 
-import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.annotations.Fork;
-import org.openjdk.jmh.annotations.Measurement;
-import org.openjdk.jmh.annotations.Warmup;
+import org.graalvm.nativeimage.ImageSingletons;
 
-/**
- * This dummy class is used to verify that the JMH microbenchmarking environment is set up properly.
- */
-@Warmup(iterations = 1)
-@Measurement(iterations = 1)
-@Fork(1)
-public class TestJMHBlackbox {
+public interface LayeredImageSingletonSupport {
 
-    @Benchmark
-    public void testJMH() {
-        // This method was intentionally left blank.
+    static LayeredImageSingletonSupport singleton() {
+        return ImageSingletons.lookup(LayeredImageSingletonSupport.class);
     }
 
+    <T> T runtimeLookup(Class<T> key);
 }
