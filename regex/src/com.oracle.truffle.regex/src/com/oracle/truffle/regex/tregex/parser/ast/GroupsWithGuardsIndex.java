@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,17 +38,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.graalvm.polyglot.impl;
+package com.oracle.truffle.regex.tregex.parser.ast;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import com.oracle.truffle.regex.tregex.automaton.SimpleStateIndex;
 
-/**
- * Triggers the PolyglotProcessor to generate method handle boilerplate.
- */
-@Retention(RetentionPolicy.SOURCE)
-@Target({ElementType.TYPE})
-@interface GenerateMethodHandleBridge {
+public final class GroupsWithGuardsIndex extends SimpleStateIndex<Group> {
+
+    @Override
+    protected int getStateId(Group group) {
+        return group.getGroupsWithGuardsIndex();
+    }
+
+    @Override
+    protected void setStateId(Group group, int id) {
+        group.setGroupsWithGuardsIndex(id);
+    }
 }

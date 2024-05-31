@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,42 +38,65 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.graalvm.polyglot.impl;
 
-abstract class ModuleAccess {
+package com.oracle.truffle.regex.tregex.buffer;
 
-    public abstract Object toMessageTransport(Object receiver);
+public final class IntRingBuffer {
 
-    public abstract Object fromMessageTransport(Object receiver);
+    private final int[] buf;
+    private int start = 0;
+    private int length = 0;
 
-    public abstract Object toLogHandler(Object logHandler);
+    public IntRingBuffer(int sizePowerOf2) {
+        buf = new int[1 << sizePowerOf2];
+    }
 
-    public abstract Object fromMessageEndpoint(Object value);
+    public boolean isEmpty() {
+        return length == 0;
+    }
 
-    public abstract Object toMessageEndpoint(Object value);
+    public void clear() {
+        start = 0;
+        length = 0;
+    }
 
-    public abstract Object fromByteSequence(Object value);
+    private int index(int index) {
+        assert Integer.bitCount(buf.length) == 1;
+        return (start + index) & (buf.length - 1);
+    }
 
-    public abstract int fromSandboxPolicy(Object value);
+    public int first() {
+        assert !isEmpty();
+        return buf[start];
+    }
 
-    public abstract Object toSandboxPolicy(int ordinal);
+    public int last() {
+        assert !isEmpty();
+        return buf[index(length - 1)];
+    }
 
-    public abstract Object toTargetMappingPrecedence(int ordinal);
+    public void add(int i) {
+        assert length < buf.length;
+        buf[index(length++)] = i;
+    }
 
-    public abstract Object toProcessHandler(Object value);
+    public void addAll(int[] o) {
+        assert buf.length >= length + o.length;
+        int copyStart = index(length);
+        int copyLength = o.length;
+        if (copyStart + copyLength > buf.length) {
+            copyLength -= (copyStart + copyLength) - buf.length;
+            System.arraycopy(o, copyLength, buf, 0, o.length - copyLength);
+        }
+        System.arraycopy(o, 0, buf, copyStart, copyLength);
+        length += o.length;
+    }
 
-    public abstract Object fromOptionDescriptors(Object value);
-
-    public abstract Object toFileSystem(Object value);
-
-    public abstract Object fromLogHandler(Object value);
-
-    public abstract Object fromThreadScope(Object value);
-
-    public abstract Object fromFileSystem(Object value);
-
-    public abstract Object fromProcessHandler(Object value);
-
-    public abstract Object[] fromOptionDescriptor(Object value);
-
+    public int removeFirst() {
+        assert !isEmpty();
+        int first = first();
+        start = index(1);
+        length--;
+        return first;
+    }
 }
