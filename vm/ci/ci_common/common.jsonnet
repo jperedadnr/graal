@@ -177,10 +177,10 @@ local devkits = graal_common.devkits;
       local java_deps(edition) = {
         downloads+: {
           JAVA_HOME: graal_common.jdks_data['labsjdk-' + edition + '-' + java_version],
-          ESPRESSO_JAVA_HOME: graal_common.jdks_data['labsjdk-' + edition + '-21'],
+          ESPRESSO_JAVA_HOME: graal_common.jdks_data['labsjdk-ee-21'],
         } + (
           if (os == 'linux' || os == 'darwin') && (arch == 'amd64') then {
-            ESPRESSO_LLVM_JAVA_HOME: graal_common.jdks_data['labsjdk-' + edition + '-21-llvm'],
+            ESPRESSO_LLVM_JAVA_HOME: graal_common.jdks_data['labsjdk-ee-21-llvm'],
           } else {
           }
         ) + (
@@ -618,7 +618,7 @@ local devkits = graal_common.devkits;
     #
     # Gates
     #
-    vm.vm_java_21 + graal_common.deps.eclipse + graal_common.deps.jdt + self.vm_base('linux', 'amd64', 'gate') + galahad.include + {
+    vm.vm_java_21 + graal_common.deps.eclipse + graal_common.deps.jdt + self.vm_base('linux', 'amd64', 'gate') + galahad.exclude + {
      run: [
        ['mx', 'gate', '-B=--force-deprecation-as-warning', '--tags', 'style,fullbuild'],
      ],
