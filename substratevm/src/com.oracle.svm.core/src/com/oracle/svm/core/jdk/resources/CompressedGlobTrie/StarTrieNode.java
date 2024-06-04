@@ -22,31 +22,27 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package com.oracle.svm.core.imagelayer;
 
-import org.graalvm.collections.Pair;
-import org.graalvm.nativeimage.ImageSingletons;
+package com.oracle.svm.core.jdk.resources.CompressedGlobTrie;
 
-import com.oracle.svm.core.graal.code.CGlobalDataInfo;
-import com.oracle.svm.core.meta.SharedMethod;
+final class StarTrieNode extends GlobTrieNode {
+    private final boolean matchingWholeLevel;
 
-public abstract class DynamicImageLayerInfo {
-    public final int layerNumber;
-    public final int nextLayerNumber;
-    public final int numLayers;
-
-    protected DynamicImageLayerInfo(int layerNumber) {
-        this.layerNumber = layerNumber;
-        this.nextLayerNumber = layerNumber + 1;
-        this.numLayers = nextLayerNumber;
+    StarTrieNode(String content) {
+        super(content);
+        this.matchingWholeLevel = false;
     }
 
-    public static DynamicImageLayerInfo singleton() {
-        return ImageSingletons.lookup(DynamicImageLayerInfo.class);
+    StarTrieNode(boolean matchesWholeLevel) {
+        super(STAR);
+        this.matchingWholeLevel = matchesWholeLevel;
     }
 
-    /**
-     * Returns a (Base, Offset) pair which can be used to call a method defined in a prior layer.
-     */
-    public abstract Pair<CGlobalDataInfo, Integer> getPriorLayerMethodLocation(SharedMethod method);
+    public boolean isMatchingWholeLevel() {
+        return matchingWholeLevel;
+    }
+
+    public boolean hasChildrenOnThisLevel() {
+        return this.getChildren().stream().anyMatch(child -> !child.isNewLevel());
+    }
 }

@@ -22,17 +22,37 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package com.oracle.svm.core.code;
 
-import org.graalvm.nativeimage.ImageSingletons;
+package com.oracle.svm.core.jdk.resources.CompressedGlobTrie;
 
-import com.oracle.svm.core.graal.code.CGlobalDataInfo;
-import com.oracle.svm.core.meta.SharedMethod;
+import com.oracle.svm.util.StringUtil;
 
-public interface BaseLayerMethodAccessor {
-    CGlobalDataInfo getMethodData(SharedMethod method);
+public class GlobUtils {
 
-    static BaseLayerMethodAccessor singleton() {
-        return ImageSingletons.lookup(BaseLayerMethodAccessor.class);
+    public static String transformToTriePath(String resource, String module) {
+        String resolvedModuleName;
+        if (module == null || module.isEmpty()) {
+            resolvedModuleName = "ALL_UNNAMED";
+        } else {
+            resolvedModuleName = StringUtil.toSlashSeparated(module);
+        }
+
+        /* prepare for concatenation */
+        if (!resolvedModuleName.endsWith("/")) {
+            resolvedModuleName += "/";
+        }
+
+        /*
+         * if somebody wrote resource like: /foo/bar/** we already append / in resolvedModuleName,
+         * and we don't want module//foo/bar/**
+         */
+        String resolvedResourceName;
+        if (resource.startsWith("/")) {
+            resolvedResourceName = resource.substring(1);
+        } else {
+            resolvedResourceName = resource;
+        }
+
+        return resolvedModuleName + resolvedResourceName;
     }
 }

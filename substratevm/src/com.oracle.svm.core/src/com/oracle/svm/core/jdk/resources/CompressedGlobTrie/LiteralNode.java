@@ -22,31 +22,11 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package com.oracle.svm.core.imagelayer;
 
-import org.graalvm.collections.Pair;
-import org.graalvm.nativeimage.ImageSingletons;
+package com.oracle.svm.core.jdk.resources.CompressedGlobTrie;
 
-import com.oracle.svm.core.graal.code.CGlobalDataInfo;
-import com.oracle.svm.core.meta.SharedMethod;
-
-public abstract class DynamicImageLayerInfo {
-    public final int layerNumber;
-    public final int nextLayerNumber;
-    public final int numLayers;
-
-    protected DynamicImageLayerInfo(int layerNumber) {
-        this.layerNumber = layerNumber;
-        this.nextLayerNumber = layerNumber + 1;
-        this.numLayers = nextLayerNumber;
+final class LiteralNode extends GlobTrieNode {
+    LiteralNode(String content) {
+        super(content);
     }
-
-    public static DynamicImageLayerInfo singleton() {
-        return ImageSingletons.lookup(DynamicImageLayerInfo.class);
-    }
-
-    /**
-     * Returns a (Base, Offset) pair which can be used to call a method defined in a prior layer.
-     */
-    public abstract Pair<CGlobalDataInfo, Integer> getPriorLayerMethodLocation(SharedMethod method);
 }
