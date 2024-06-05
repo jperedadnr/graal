@@ -29,6 +29,7 @@ import static com.oracle.svm.core.util.VMError.shouldNotReachHereUnexpectedInput
 import java.util.BitSet;
 import java.util.Objects;
 import java.util.TreeMap;
+import java.util.function.Consumer;
 import java.util.function.IntFunction;
 import java.util.stream.Stream;
 
@@ -52,6 +53,7 @@ import com.oracle.svm.core.code.FrameInfoQueryResult.ValueType;
 import com.oracle.svm.core.config.ConfigurationValues;
 import com.oracle.svm.core.config.ObjectLayout;
 import com.oracle.svm.core.deopt.DeoptEntryInfopoint;
+import com.oracle.svm.core.graal.RuntimeCompilation;
 import com.oracle.svm.core.heap.CodeReferenceMapDecoder;
 import com.oracle.svm.core.heap.CodeReferenceMapEncoder;
 import com.oracle.svm.core.heap.ObjectReferenceVisitor;
@@ -145,7 +147,7 @@ public class CodeInfoEncoder {
         private final FrequencyEncoder<Member> methods;
         private Member[] encodedMethods;
 
-        public Encoders(boolean imageCode) {
+        public Encoders(boolean imageCode, Consumer<Class<?>> classVerifier) {
             this.objectConstants = FrequencyEncoder.createEqualityEncoder();
 
             /*
@@ -153,7 +155,7 @@ public class CodeInfoEncoder {
              * reference only image methods via method ids.
              */
             assert imageCode == SubstrateUtil.HOSTED;
-            this.classes = imageCode ? FrequencyEncoder.createEqualityEncoder() : null;
+            this.classes = imageCode ? FrequencyEncoder.createVerifyingEqualityEncoder(classVerifier) : null;
             this.memberNames = imageCode ? FrequencyEncoder.createEqualityEncoder() : null;
             this.methods = imageCode ? FrequencyEncoder.createEqualityEncoder() : null;
             this.otherStrings = imageCode ? FrequencyEncoder.createEqualityEncoder() : null;
@@ -324,7 +326,12 @@ public class CodeInfoEncoder {
 
     @Fold
     public static boolean shouldEncodeAllMethodMetadata() {
-        return HasJfrSupport.get();
+        /*
+         * We don't support JFR stack traces if JIT compilation is enabled, so there's no need to
+         * include extra method metadata. Additionally, including extra metadata would increase the
+         * binary size.
+         */
+        return HasJfrSupport.get() && !RuntimeCompilation.isEnabled();
     }
 
     public static int getEntryOffset(Infopoint infopoint) {

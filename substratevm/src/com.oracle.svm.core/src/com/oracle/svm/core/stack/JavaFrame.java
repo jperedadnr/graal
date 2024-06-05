@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2019, Arm Limited. All rights reserved.
+ * Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,22 +22,39 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package jdk.graal.compiler.replacements.aarch64;
+package com.oracle.svm.core.stack;
 
-import static jdk.graal.compiler.nodeinfo.NodeCycles.CYCLES_4;
-import static jdk.graal.compiler.nodeinfo.NodeSize.SIZE_4;
+import org.graalvm.nativeimage.c.function.CodePointer;
+import org.graalvm.nativeimage.c.struct.RawField;
+import org.graalvm.nativeimage.c.struct.RawStructure;
+import org.graalvm.word.Pointer;
 
-import jdk.graal.compiler.graph.NodeClass;
-import jdk.graal.compiler.nodeinfo.NodeInfo;
-import jdk.graal.compiler.nodes.ValueNode;
-import jdk.graal.compiler.replacements.nodes.BitCountNode;
+import com.oracle.svm.core.code.SimpleCodeInfoQueryResult;
+import com.oracle.svm.core.code.UntetheredCodeInfo;
 
-@NodeInfo(cycles = CYCLES_4, size = SIZE_4)
-public final class AArch64BitCountNode extends BitCountNode {
+/**
+ * Represents a physical Java stack frame.
+ *
+ * Note that the fields may contain stale values after interruptible code was executed, see
+ * {@link JavaStackWalk} for more details.
+ */
+@RawStructure
+public interface JavaFrame extends SimpleCodeInfoQueryResult {
+    @RawField
+    Pointer getSP();
 
-    public static final NodeClass<AArch64BitCountNode> TYPE = NodeClass.create(AArch64BitCountNode.class);
+    @RawField
+    void setSP(Pointer sp);
 
-    public AArch64BitCountNode(ValueNode value) {
-        super(TYPE, value);
-    }
+    @RawField
+    CodePointer getIP();
+
+    @RawField
+    void setIP(CodePointer ip);
+
+    @RawField
+    UntetheredCodeInfo getIPCodeInfo();
+
+    @RawField
+    void setIPCodeInfo(UntetheredCodeInfo codeInfo);
 }
