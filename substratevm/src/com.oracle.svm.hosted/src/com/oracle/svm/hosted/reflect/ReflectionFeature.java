@@ -24,6 +24,8 @@
  */
 package com.oracle.svm.hosted.reflect;
 
+import static com.oracle.svm.core.configure.ConfigurationParser.REFLECTION_KEY;
+
 import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
@@ -277,8 +279,12 @@ public class ReflectionFeature implements InternalFeature, ReflectionSubstitutio
         var conditionResolver = new NativeImageConditionResolver(access.getImageClassLoader(), ClassInitializationSupport.singleton());
         reflectionData.duringSetup(access.getMetaAccess(), aUniverse);
         ProxyRegistry proxyRegistry = ImageSingletons.lookup(ProxyRegistry.class);
-        ReflectionConfigurationParser<ConfigurationCondition, Class<?>> parser = ConfigurationParserUtils.create(conditionResolver, reflectionData, proxyRegistry, access.getImageClassLoader());
-        loadedConfigurations = ConfigurationParserUtils.parseAndRegisterConfigurations(parser, access.getImageClassLoader(), "reflection",
+        ReflectionConfigurationParser<ConfigurationCondition, Class<?>> parser = ConfigurationParserUtils.create(REFLECTION_KEY, true, conditionResolver, reflectionData, proxyRegistry,
+                        access.getImageClassLoader());
+        loadedConfigurations = ConfigurationParserUtils.parseAndRegisterConfigurationsFromCombinedFile(parser, access.getImageClassLoader(), "reflection");
+        ReflectionConfigurationParser<ConfigurationCondition, Class<?>> legacyParser = ConfigurationParserUtils.create(null, false, conditionResolver, reflectionData, proxyRegistry,
+                        access.getImageClassLoader());
+        loadedConfigurations += ConfigurationParserUtils.parseAndRegisterConfigurations(legacyParser, access.getImageClassLoader(), "reflection",
                         ConfigurationFiles.Options.ReflectionConfigurationFiles, ConfigurationFiles.Options.ReflectionConfigurationResources,
                         ConfigurationFile.REFLECTION.getFileName());
 
@@ -321,7 +327,7 @@ public class ReflectionFeature implements InternalFeature, ReflectionSubstitutio
         metaAccess = analysisAccess.getMetaAccess();
         reflectionData.beforeAnalysis(analysisAccess);
         /* duplicated to reduce the number of analysis iterations */
-        reflectionData.flushConditionalConfiguration(access);
+        reflectionData.setAnalysisAccess(access);
 
         /*
          * This has to be registered before registering methods below since this causes the analysis
@@ -334,11 +340,6 @@ public class ReflectionFeature implements InternalFeature, ReflectionSubstitutio
 
         /* Make sure array classes don't need to be registered for reflection. */
         RuntimeReflection.register(Object.class.getDeclaredMethods());
-    }
-
-    @Override
-    public void duringAnalysis(DuringAnalysisAccess access) {
-        reflectionData.flushConditionalConfiguration(access);
     }
 
     @Override

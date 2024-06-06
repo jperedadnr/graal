@@ -33,6 +33,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 
+import org.graalvm.nativeimage.impl.ConfigurationCondition;
 import org.graalvm.nativeimage.impl.UnresolvedConfigurationCondition;
 import org.junit.Assert;
 import org.junit.Test;
@@ -80,7 +81,7 @@ public class ResourceConfigurationTest {
 
             Thread writerThread = new Thread(() -> {
                 try (JsonWriter w = jw) {
-                    rc.printJson(w);
+                    rc.printLegacyJson(w);
                 } catch (IOException e) {
                     Assert.fail(e.getMessage());
                 }
@@ -102,7 +103,7 @@ public class ResourceConfigurationTest {
                 }
 
                 @Override
-                public void addResource(Module module, String resourcePath) {
+                public void addResourceEntry(Module module, String resourcePath) {
                     throw VMError.shouldNotReachHere("Unused function.");
                 }
 
@@ -125,12 +126,17 @@ public class ResourceConfigurationTest {
                 }
 
                 @Override
+                public void addCondition(ConfigurationCondition configurationCondition, Module module, String resourcePath) {
+
+                }
+
+                @Override
                 public void addClassBasedResourceBundle(UnresolvedConfigurationCondition condition, String basename, String className) {
 
                 }
             };
 
-            ResourceConfigurationParser<UnresolvedConfigurationCondition> rcp = new ResourceConfigurationParser<>(ConfigurationConditionResolver.identityResolver(), registry, true);
+            ResourceConfigurationParser<UnresolvedConfigurationCondition> rcp = ResourceConfigurationParser.create(false, ConfigurationConditionResolver.identityResolver(), registry, true);
             writerThread.start();
             rcp.parseAndRegister(pr);
 

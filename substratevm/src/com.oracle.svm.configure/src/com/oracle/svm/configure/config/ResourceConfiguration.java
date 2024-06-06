@@ -24,6 +24,10 @@
  */
 package com.oracle.svm.configure.config;
 
+import static com.oracle.svm.core.configure.ConfigurationParser.BUNDLES_KEY;
+import static com.oracle.svm.core.configure.ConfigurationParser.GLOBS_KEY;
+import static com.oracle.svm.core.configure.ConfigurationParser.RESOURCES_KEY;
+
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
@@ -35,6 +39,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.regex.Pattern;
 
+import org.graalvm.nativeimage.impl.ConfigurationCondition;
 import org.graalvm.nativeimage.impl.UnresolvedConfigurationCondition;
 
 import com.oracle.svm.configure.ConfigurationBase;
@@ -69,7 +74,12 @@ public final class ResourceConfiguration extends ConfigurationBase<ResourceConfi
         }
 
         @Override
-        public void addResource(Module module, String resourcePath) {
+        public void addResourceEntry(Module module, String resourcePath) {
+            throw VMError.shouldNotReachHere("Unused function.");
+        }
+
+        @Override
+        public void addCondition(ConfigurationCondition condition, Module module, String resourcePath) {
             throw VMError.shouldNotReachHere("Unused function.");
         }
 
@@ -315,8 +325,24 @@ public final class ResourceConfiguration extends ConfigurationBase<ResourceConfi
 
     @Override
     public void printJson(JsonWriter writer) throws IOException {
-        writer.append('{').indent().newline();
-        writer.quote("resources").append(':').append('{').newline().indent();
+        printGlobsJson(writer, true);
+        writer.appendSeparator().newline();
+        printBundlesJson(writer);
+    }
+
+    @Override
+    public void printLegacyJson(JsonWriter writer) throws IOException {
+        writer.appendObjectStart().indent().newline();
+        printResourcesJson(writer);
+        writer.appendSeparator().newline();
+        printBundlesJson(writer);
+        writer.appendSeparator().newline();
+        printGlobsJson(writer, false);
+        writer.unindent().newline().appendObjectEnd();
+    }
+
+    void printResourcesJson(JsonWriter writer) throws IOException {
+        writer.quote(RESOURCES_KEY).append(':').append('{').indent().newline();
         writer.quote("includes").append(':');
         JsonPrinter.printCollection(writer, addedResources, ConditionalElement.comparator(), ResourceConfiguration::conditionalRegexElementJson);
         if (!ignoredResources.isEmpty()) {
@@ -324,19 +350,22 @@ public final class ResourceConfiguration extends ConfigurationBase<ResourceConfi
             writer.quote("excludes").append(':');
             JsonPrinter.printCollection(writer, ignoredResources.keySet(), ConditionalElement.comparator(), ResourceConfiguration::conditionalRegexElementJson);
         }
-        writer.unindent();
-        writer.append('}').append(',').newline();
-        writer.quote("globs").append(':');
-        JsonPrinter.printCollection(writer, addedGlobs, ConditionalElement.comparator(ResourceEntry.comparator()), ResourceConfiguration::conditionalGlobElementJson);
-        writer.append(',').newline();
-        writer.quote("bundles").append(':');
-        JsonPrinter.printCollection(writer, bundles.keySet(), ConditionalElement.comparator(), (p, w) -> printResourceBundle(bundles.get(p), w));
         writer.unindent().newline().append('}');
     }
 
+    void printBundlesJson(JsonWriter writer) throws IOException {
+        writer.quote(BUNDLES_KEY).append(':');
+        JsonPrinter.printCollection(writer, bundles.keySet(), ConditionalElement.comparator(), (p, w) -> printResourceBundle(bundles.get(p), w));
+    }
+
+    void printGlobsJson(JsonWriter writer, boolean useResourcesFieldName) throws IOException {
+        writer.quote(useResourcesFieldName ? RESOURCES_KEY : GLOBS_KEY).appendFieldSeparator();
+        JsonPrinter.printCollection(writer, addedGlobs, ConditionalElement.comparator(ResourceEntry.comparator()), ResourceConfiguration::conditionalGlobElementJson);
+    }
+
     @Override
-    public ConfigurationParser createParser() {
-        return new ResourceConfigurationParser<>(ConfigurationConditionResolver.identityResolver(), new ResourceConfiguration.ParserAdapter(this), true);
+    public ConfigurationParser createParser(boolean strictMetadata) {
+        return ResourceConfigurationParser.create(strictMetadata, ConfigurationConditionResolver.identityResolver(), new ResourceConfiguration.ParserAdapter(this), true);
     }
 
     private static void printResourceBundle(BundleConfiguration config, JsonWriter writer) throws IOException {
@@ -357,6 +386,19 @@ public final class ResourceConfiguration extends ConfigurationBase<ResourceConfi
     @Override
     public boolean isEmpty() {
         return addedResources.isEmpty() && bundles.isEmpty();
+    }
+
+    @Override
+    public boolean supportsCombinedFile() {
+        if (!addedResources.isEmpty() || !ignoredResources.isEmpty()) {
+            return false;
+        }
+        for (ResourceConfiguration.BundleConfiguration bundleConfiguration : bundles.values()) {
+            if (!bundleConfiguration.classNames.isEmpty()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static void conditionalGlobElementJson(ConditionalElement<ResourceEntry> p, JsonWriter w) throws IOException {
