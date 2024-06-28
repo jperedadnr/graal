@@ -65,6 +65,7 @@ import com.oracle.svm.common.meta.MultiMethod;
 import com.oracle.svm.core.LinkerInvocation;
 import com.oracle.svm.core.SubstrateOptions;
 import com.oracle.svm.core.annotate.Delete;
+import com.oracle.svm.core.feature.InternalFeature;
 import com.oracle.svm.core.graal.meta.RuntimeConfiguration;
 import com.oracle.svm.core.meta.SharedField;
 import com.oracle.svm.core.meta.SharedMethod;
@@ -249,7 +250,7 @@ public class FeatureImpl {
         }
 
         Set<AnalysisMethod> reachableMethodOverrides(AnalysisMethod baseMethod) {
-            return AnalysisUniverse.reachableMethodOverrides(baseMethod);
+            return baseMethod.collectMethodImplementations(true);
         }
 
         public void rescanObject(Object obj) {
@@ -416,15 +417,6 @@ public class FeatureImpl {
         public boolean registerAsUnsafeAccessed(AnalysisField aField, Object reason) {
             assert !AnnotationAccess.isAnnotationPresent(aField, Delete.class);
             return aField.registerAsUnsafeAccessed(reason);
-        }
-
-        public void registerAsFrozenUnsafeAccessed(Field field, Object reason) {
-            registerAsFrozenUnsafeAccessed(getMetaAccess().lookupJavaField(field), reason);
-        }
-
-        public void registerAsFrozenUnsafeAccessed(AnalysisField aField, Object reason) {
-            aField.registerAsFrozenUnsafeAccessed();
-            registerAsUnsafeAccessed(aField, reason);
         }
 
         public void registerAsRoot(Executable method, boolean invokeSpecial, String reason, MultiMethod.MultiMethodKey... otherRoots) {
@@ -749,6 +741,19 @@ public class FeatureImpl {
                 linkerInvocationTransformers = new ArrayList<>();
             }
             linkerInvocationTransformers.add(transformer);
+        }
+    }
+
+    public static class AfterAbstractImageCreationAccessImpl extends FeatureAccessImpl implements InternalFeature.AfterAbstractImageCreationAccess {
+        protected final AbstractImage abstractImage;
+
+        AfterAbstractImageCreationAccessImpl(FeatureHandler featureHandler, ImageClassLoader imageClassLoader, DebugContext debugContext, AbstractImage abstractImage) {
+            super(featureHandler, imageClassLoader, debugContext);
+            this.abstractImage = abstractImage;
+        }
+
+        public AbstractImage getImage() {
+            return abstractImage;
         }
     }
 

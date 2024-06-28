@@ -113,9 +113,9 @@ import jdk.graal.compiler.nodes.ValuePhiNode;
 import jdk.graal.compiler.nodes.calc.IsNullNode;
 import jdk.graal.compiler.nodes.extended.BoxNode;
 import jdk.graal.compiler.nodes.extended.BranchProbabilityNode;
+import jdk.graal.compiler.nodes.extended.BytecodeExceptionNode.BytecodeExceptionKind;
 import jdk.graal.compiler.nodes.extended.ForeignCallNode;
 import jdk.graal.compiler.nodes.extended.UnboxNode;
-import jdk.graal.compiler.nodes.extended.BytecodeExceptionNode.BytecodeExceptionKind;
 import jdk.graal.compiler.nodes.graphbuilderconf.GeneratedInvocationPlugin;
 import jdk.graal.compiler.nodes.graphbuilderconf.GraphBuilderConfiguration;
 import jdk.graal.compiler.nodes.graphbuilderconf.GraphBuilderPlugin;
@@ -652,6 +652,33 @@ public abstract class SharedGraphBuilderPhase extends GraphBuilderPhase.Instance
         }
 
         @Override
+        protected int minLockDepthAtMonitorExit(boolean inEpilogue) {
+            /**
+             * The
+             * {@code javasoft.sqe.tests.vm.instr.monitorexit.monitorexit009.monitorexit00901m1.monitorexit00901m1}
+             * test implies that unlocking the method synchronized object can be structured locking:
+             *
+             * <pre>
+             * synchronized void foo() {
+             *   monitorexit this // valid unlock of method synchronize object
+             *   // do something
+             *   monitorenter this
+             *   return
+             * }
+             * </pre>
+             *
+             * To be JCK compliant, it is only required to always have at least one locked object
+             * before performing a monitorexit.
+             */
+            return 1;
+        }
+
+        @Override
+        protected void handleUnsupportedJsr(String msg) {
+            genThrowUnsupportedFeatureError(msg);
+        }
+
+        @Override
         protected void handleUnstructuredLocking(String msg, boolean isDeadEnd) {
             ValueNode methodSynchronizedObjectSnapshot = methodSynchronizedObject;
             if (getDispatchBlock(bci()) == blockMap.getUnwindBlock()) {
@@ -773,18 +800,16 @@ public abstract class SharedGraphBuilderPhase extends GraphBuilderPhase.Instance
                 MonitorIdNode id = frameState.peekMonitorId();
                 ValueNode lock = frameState.popLock();
                 frameState.pushLock(lock, id);
-                genMonitorExit(lock, null, bci(), false);
+                genMonitorExit(lock, null, bci(), includeMethodSynchronizeObject, false);
             }
         }
 
         private void genThrowUnsupportedFeatureError(String msg) {
-            FixedNode unreachableNode = graph.add(new LoweredDeadEndNode());
-
             ConstantNode messageNode = ConstantNode.forConstant(getConstantReflection().forString(msg), getMetaAccess(), getGraph());
             ForeignCallNode foreignCallNode = graph.add(new ForeignCallNode(SnippetRuntime.UNSUPPORTED_FEATURE, messageNode));
-            foreignCallNode.setNext(unreachableNode);
-            unreachableNode = foreignCallNode;
-            lastInstr.setNext(unreachableNode);
+            lastInstr.setNext(foreignCallNode);
+            foreignCallNode.setNext(graph.add(new LoweredDeadEndNode()));
+            lastInstr = null;
         }
 
         private void checkWordType(ValueNode value, JavaType expectedType, String reason) {
@@ -849,7 +874,7 @@ public abstract class SharedGraphBuilderPhase extends GraphBuilderPhase.Instance
         }
 
         protected final boolean isMethodDeoptTarget() {
-            return MultiMethod.isDeoptTarget(method);
+            return SubstrateCompilationDirectives.isDeoptTarget(method);
         }
 
         @Override

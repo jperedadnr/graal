@@ -1,10 +1,10 @@
 suite = {
-  "mxversion": "7.5.2",
+  "mxversion": "7.27.1",
   "name" : "compiler",
   "sourceinprojectwhitelist" : [],
 
   "groupId" : "org.graalvm.compiler",
-  "version" : "24.1.0",
+  "version" : "24.2.0",
   "release" : False,
   "url" : "http://www.graalvm.org/",
   "developer" : {
@@ -172,6 +172,9 @@ suite = {
         "java.logging",
       ],
       "requiresConcealed" : {
+        "java.base" : [
+          "jdk.internal.misc",
+        ],
         "jdk.internal.vm.ci" : [
           "jdk.vm.ci.meta",
           "jdk.vm.ci.code",
@@ -388,27 +391,6 @@ suite = {
       "graalCompilerSourceEdition": "ignore",
     },
 
-    # ------------- GraalTruffle -------------
-
-    "jdk.graal.compiler.truffle.test.jdk21" : {
-      "subDir" : "src",
-      "sourceDirs" : ["src"],
-      "dependencies": [
-        "jdk.graal.compiler.test",
-      ],
-      "annotationProcessors" : [
-        "GRAAL_PROCESSOR",
-      ],
-      "overlayTarget" : "jdk.graal.compiler.test",
-      "multiReleaseJarVersion" : "21",
-      "checkstyle" : "jdk.graal.compiler",
-      "javaCompliance" : "21+",
-      "checkPackagePrefix" : "false",
-      "jacoco": "exclude",
-      "testProject" : True,
-      "graalCompilerSourceEdition": "ignore",
-    },
-
     # ------------- blackbox micro benchmarks -------------
 
     "org.graalvm.micro.benchmarks" : {
@@ -444,6 +426,31 @@ suite = {
       "sourceDirs" : ["src"],
       "dependencies" : [
         "org.graalvm.profdiff",
+        "mx:JUNIT",
+      ],
+      "checkstyle" : "jdk.graal.compiler",
+      "javaCompliance" : "21+",
+      "workingSets" : "Graal,Test",
+      "graalCompilerSourceEdition": "ignore",
+    },
+
+    "org.graalvm.igvutil" : {
+      "subDir" : "src",
+      "sourceDirs" : ["src"],
+      "dependencies" : [
+        "jdk.graal.compiler",
+        "sdk:COLLECTIONS",
+      ],
+      "checkstyle" : "jdk.graal.compiler",
+      "javaCompliance" : "21+",
+      "graalCompilerSourceEdition": "ignore",
+    },
+
+    "org.graalvm.igvutil.test" : {
+      "subDir" : "src",
+      "sourceDirs" : ["src"],
+      "dependencies" : [
+        "org.graalvm.igvutil",
         "mx:JUNIT",
       ],
       "checkstyle" : "jdk.graal.compiler",
@@ -666,6 +673,18 @@ suite = {
       "graalCompilerSourceEdition": "ignore",
     },
 
+    "GRAAL_IGVUTIL": {
+      "subDir" : "src",
+      "dependencies" : [
+        "org.graalvm.igvutil",
+      ],
+      "distDependencies" : [
+        "GRAAL",
+      ],
+      "maven" : False,
+      "graalCompilerSourceEdition": "ignore",
+    },
+
     "GRAAL_PROFDIFF_TEST" : {
       "subDir" : "src",
       "dependencies" : [
@@ -673,6 +692,22 @@ suite = {
       ],
       "distDependencies" : [
         "GRAAL_PROFDIFF",
+      ],
+      "exclude" : [
+        "mx:JUNIT",
+      ],
+      "unittestConfig": "graal",
+      "maven": False,
+      "graalCompilerSourceEdition": "ignore",
+    },
+
+    "GRAAL_IGVUTIL_TEST" : {
+      "subDir" : "src",
+      "dependencies" : [
+        "org.graalvm.igvutil.test",
+      ],
+      "distDependencies" : [
+        "GRAAL_IGVUTIL",
       ],
       "exclude" : [
         "mx:JUNIT",

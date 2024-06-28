@@ -419,14 +419,22 @@ public class ReflectionDataBuilder extends ConditionalConfigurationRegistry impl
         }
 
         AnalysisMethod analysisMethod = metaAccess.lookupJavaMethod(reflectExecutable);
-        var exists = registeredMethods.containsKey(analysisMethod);
-        var conditionalValue = registeredMethods.computeIfAbsent(analysisMethod, (t) -> new ConditionalRuntimeValue<>(RuntimeConditionSet.emptySet(), reflectExecutable));
+        boolean registered = false;
+        ConditionalRuntimeValue<Executable> conditionalValue = registeredMethods.get(analysisMethod);
+        if (conditionalValue == null) {
+            var newConditionalValue = new ConditionalRuntimeValue<>(RuntimeConditionSet.emptySet(), reflectExecutable);
+            conditionalValue = registeredMethods.putIfAbsent(analysisMethod, newConditionalValue);
+            if (conditionalValue == null) {
+                conditionalValue = newConditionalValue;
+                registered = true;
+            }
+        }
         if (!queriedOnly) {
             /* queryOnly methods are conditioned by the type itself */
             conditionalValue.getConditions().addCondition(cnd);
         }
 
-        if (!exists) {
+        if (registered) {
             registerTypesForMethod(analysisMethod, reflectExecutable);
             AnalysisType declaringType = analysisMethod.getDeclaringClass();
             Class<?> declaringClass = declaringType.getJavaClass();
@@ -975,7 +983,15 @@ public class ReflectionDataBuilder extends ConditionalConfigurationRegistry impl
              * Exception proxies are stored as-is in the image heap
              */
             if (ExceptionProxy.class.isAssignableFrom(type)) {
+                /*
+                 * The image heap scanning does not see the actual instances, so we need to be
+                 * conservative and assume fields can have any value.
+                 */
                 analysisType.registerAsInstantiated("Is used by annotation of element registered for reflection.");
+                for (var f : analysisType.getInstanceFields(true)) {
+                    var aField = (AnalysisField) f;
+                    universe.getBigbang().injectFieldTypes(aField, List.of(aField.getType()), true);
+                }
             }
         }
     }

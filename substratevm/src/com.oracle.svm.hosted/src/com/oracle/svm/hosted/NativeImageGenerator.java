@@ -227,7 +227,6 @@ import com.oracle.svm.hosted.code.CFunctionSubstitutionProcessor;
 import com.oracle.svm.hosted.code.CompileQueue;
 import com.oracle.svm.hosted.code.HostedRuntimeConfigurationBuilder;
 import com.oracle.svm.hosted.code.NativeMethodSubstitutionProcessor;
-import com.oracle.svm.hosted.code.ObjectFileTransformer;
 import com.oracle.svm.hosted.code.RestrictHeapAccessCalleesImpl;
 import com.oracle.svm.hosted.code.SubstrateGraphMakerFactory;
 import com.oracle.svm.hosted.heap.ObservableImageHeapMapProviderImpl;
@@ -536,7 +535,6 @@ public class NativeImageGenerator {
                         imageLayerSupport);
 
         ImageSingletons.add(LayeredImageSingletonSupport.class, (LayeredImageSingletonSupport) ImageSingletonsSupportImpl.get());
-        ImageSingletons.add(ImageLayerBuildingSupport.class, imageLayerSupport);
         ImageSingletons.add(ProgressReporter.class, reporter);
         ImageSingletons.add(DeadlockWatchdog.class, loader.watchdog);
         ImageSingletons.add(TimerCollection.class, timerCollection);
@@ -716,9 +714,8 @@ public class NativeImageGenerator {
 
                         createAbstractImage(k, hostedEntryPoints, heap, hMetaAccess, codeCache);
 
-                        if (ImageSingletons.contains(ObjectFileTransformer.class)) {
-                            ImageSingletons.lookup(ObjectFileTransformer.class).afterAbstractImageCreation(image.getObjectFile());
-                        }
+                        FeatureImpl.AfterAbstractImageCreationAccessImpl access = new FeatureImpl.AfterAbstractImageCreationAccessImpl(featureHandler, loader, debug, image);
+                        featureHandler.forEachGraalFeature(feature -> feature.afterAbstractImageCreation(access));
 
                         image.build(imageName, debug);
 

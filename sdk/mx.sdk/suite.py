@@ -39,9 +39,9 @@
 # SOFTWARE.
 #
 suite = {
-  "mxversion": "7.22.0",
+  "mxversion": "7.27.0",
   "name" : "sdk",
-  "version" : "24.1.0",
+  "version" : "24.2.0",
   "release" : False,
   "sourceinprojectwhitelist" : [],
   "url" : "https://github.com/oracle/graal",
@@ -226,6 +226,9 @@ suite = {
           "aarch64": {
             "urls" : ["https://lafo.ssw.uni-linz.ac.at/pub/toolchain-gcc-musl/toolchain-gcc-10.2.1-musl-1.2.2-linux-aarch64.tar.gz"],
             "digest" : "sha512:f5545f6b36c2306861c026895d437a57357515e8dfefb0e8419413f61b146f42dc072f8a8a7a9f4885d6448396d656f59264e61e3f5eedd278486228aa58904e",
+          },
+          "<others>": {
+            "optional": True,
           },
         },
         "<others>": {

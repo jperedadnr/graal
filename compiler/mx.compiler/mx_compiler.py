@@ -897,12 +897,7 @@ def _check_using_latest_jars(dists):
 
 def _parseVmArgs(args, addDefaultArgs=True):
     args = mx.expand_project_in_args(args, insitu=False)
-
-    # add default graal.options.file
     argsPrefix = []
-    options_file = join(mx.primary_suite().dir, 'graal.options')
-    if exists(options_file):
-        argsPrefix.append('-Djdk.graal.options.file=' + options_file)
 
     if '-version' in args:
         ignoredArgs = args[args.index('-version') + 1:]
@@ -1116,7 +1111,7 @@ def collate_metrics(args):
 def run_java(args, out=None, err=None, addDefaultArgs=True, command_mapper_hooks=None, jdk=None, **kw_args):
     graaljdk = jdk or get_graaljdk()
     vm_args = _parseVmArgs(args, addDefaultArgs=addDefaultArgs)
-    args = ['-XX:+UnlockExperimentalVMOptions', '-XX:+EnableJVMCI'] + vm_args
+    args = ['-XX:+UnlockExperimentalVMOptions', '-XX:+EnableJVMCI', '--add-exports=java.base/jdk.internal.misc=jdk.graal.compiler'] + vm_args
     _check_bootstrap_config(args)
     cmd = get_vm_prefix() + [graaljdk.java] + ['-server'] + args
     map_file = join(graaljdk.home, 'proguard.map')
@@ -1533,6 +1528,12 @@ def profdiff(args):
     vm_args = ['-cp', cp, 'org.graalvm.profdiff.Profdiff'] + args
     return jdk.run_java(args=vm_args)
 
+def igvutil(args):
+    """various utilities to inspect and modify IGV graphs"""
+    cp = mx.classpath('GRAAL_IGVUTIL', jdk=jdk)
+    vm_args = ['-cp', cp, 'org.graalvm.igvutil.IgvUtility'] + args
+    return jdk.run_java(args=vm_args)
+
 mx.update_commands(_suite, {
     'sl' : [sl, '[SL args|@VM options]'],
     'vm': [run_vm_with_jvmci_compiler, '[-options] class [args...]'],
@@ -1545,6 +1546,7 @@ mx.update_commands(_suite, {
     'graaljdk-show': [print_graaljdk_config, '[options]'],
     'phaseplan-fuzz-jtt-tests': [phaseplan_fuzz_jtt_tests, "Runs JTT's unit tests with fuzzed phase plans."],
     'profdiff': [profdiff, '[options] proftool_output1 optimization_log1 proftool_output2 optimization_log2'],
+    'igvutil': [igvutil, '[subcommand] [options]'],
 })
 
 mx.add_argument('--no-jacoco-exclude-truffle', action='store_false', dest='jacoco_exclude_truffle', help="Don't exclude Truffle classes from jacoco annotations.")

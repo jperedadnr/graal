@@ -2,6 +2,11 @@
 
 This changelog summarizes major changes to GraalVM Native Image.
 
+## GraalVM for JDK 24 (Internal Version 24.2.0)
+* (GR-54476): Issue a deprecation warning on first use of a legacy `graal.` prefix (see GR-49960 in [Compiler changelog](../compiler/CHANGELOG.md)).
+  The warning is planned to be replaced by an error in GraalVM for JDK 25.
+* (GR-48384) Added a GDB Python script (`gdb-debughelpers.py`) to improve the Native Image debugging experience.
+
 ## GraalVM for JDK 23 (Internal Version 24.1.0)
 * (GR-51520) The old class initialization strategy, which was deprecated in GraalVM for JDK 22, is removed. The option `StrictImageHeap` no longer has any effect.
 * (GR-51106) Fields that are accessed via a `VarHandle` or `MethodHandle` are no longer marked as "unsafe accessed" when the `VarHandle`/`MethodHandle` can be fully intrinsified.
@@ -27,6 +32,7 @@ This changelog summarizes major changes to GraalVM Native Image.
 * (GR-18214) In-place compacting garbage collection for the Serial GC old generation with `-H:+CompactingOldGen`.
 * (GR-52844) Add `-Os`, a new optimization mode to configure the optimizer in a way to get the smallest code size.
 * (GR-49770) Add support for glob patterns in resource-config files in addition to regexp. The Tracing agent now prints entries in the glob format.
+* (GR-46386) Throw missing registration errors for JNI queries when the query was not included in the reachability metadata.
 
 ## GraalVM for JDK 22 (Internal Version 24.0.0)
 * (GR-48304) Red Hat added support for the JFR event ThreadAllocationStatistics.
