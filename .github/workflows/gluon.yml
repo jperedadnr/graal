@@ -39,12 +39,8 @@ jobs:
           path: ~/.mx
           key: ${{ runner.os }}-mx-${{ hashFiles('**/suite.py') }}
           restore-keys: ${{ runner.os }}-mx-
-      - name: Get JDK
+      - name: Get LabsJDK
         run: |
-# https://github.com/graalvm/labs-openjdk/releases/download/23%2B25-jvmci-b01/labsjdk-ce-23+25-jvmci-b01-darwin-aarch64.tar.gz
-# https://github.com/graalvm/labs-openjdk/releases/download/23%2B25-jvmci-b01/labsjdk-ce-23+25-jvmci-b01-darwin-amd64.tar.gz
-# https://github.com/graalvm/labs-openjdk/releases/download/23%2B25-jvmci-b01/labsjdk-ce-23+25-jvmci-b01-linux-amd64.tar.gz
-# https://github.com/graalvm/labs-openjdk/releases/download/23%2B25-jvmci-b01/labsjdk-ce-23+25-jvmci-b01-windows-amd64.tar.gz
           wget ${{ env.LABS_LINK }}labsjdk-ce-${{ env.LABS_TAG }}-darwin-aarch64.tar.gz -O labsjdk-ce-${{ env.LABS_TAG }}-darwin-aarch64.tar.gz
           tar -xf labsjdk-ce-${{ env.LABS_TAG }}-darwin-aarch64.tar.gz
           echo "JAVA_HOME=${{ github.workspace }}/labsjdk-ce-23-jvmci-b01" >> ${GITHUB_ENV}
