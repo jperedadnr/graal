@@ -16,7 +16,11 @@ env:
 
 jobs:
   build-graalvm-darwin:
-    runs-on: [macos-latest]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-13, macos-latest]
     env:
       LABS_LINK: https://github.com/graalvm/labs-openjdk/releases/download/23%2B25-jvmci-b01/
       LABS_TAG: 23+25-jvmci-b01
@@ -39,10 +43,16 @@ jobs:
           path: ~/.mx
           key: ${{ runner.os }}-mx-${{ hashFiles('**/suite.py') }}
           restore-keys: ${{ runner.os }}-mx-
+      - name: Get Arch Arm64
+        if: runner.os == 'macos-13'
+        run: echo "AARCH=arm64" >> ${GITHUB_ENV}
+      - name: Get Arch AArch64
+        if: runner.os == 'macos-latest'
+        run: echo "AARCH=aarch64" >> ${GITHUB_ENV}
       - name: Get LabsJDK
         run: |
-          wget ${{ env.LABS_LINK }}labsjdk-ce-${{ env.LABS_TAG }}-darwin-aarch64.tar.gz -O labsjdk-ce-${{ env.LABS_TAG }}-darwin-aarch64.tar.gz
-          tar -xf labsjdk-ce-${{ env.LABS_TAG }}-darwin-aarch64.tar.gz
+          wget ${{ env.LABS_LINK }}labsjdk-ce-${{ env.LABS_TAG }}-darwin-${{ env.ARCH }}.tar.gz -O labsjdk-ce-${{ env.LABS_TAG }}-darwin-${{ env.ARCH }}.tar.gz
+          tar -xf labsjdk-ce-${{ env.LABS_TAG }}-darwin-${{ env.ARCH }}.tar.gz
           echo "JAVA_HOME=${{ github.workspace }}/labsjdk-ce-23-jvmci-b01/Contents/Home" >> ${GITHUB_ENV}
       - name: Build GraalVM
         id: darwin-build-graalvm
@@ -65,6 +75,6 @@ jobs:
       - name: Archive distribution
         uses: actions/upload-artifact@v2
         with:
-          name: graalvm-zip-darwin
+          name: graalvm-zip-darwin-${{ env.ARCH }}
           path: |
             vm/${{ env.GRAALVM_SVM }}.tar.gz
