@@ -52,7 +52,7 @@ jobs:
         if: matrix.os == 'macos-13'
         uses: actions/setup-python@v5
         with:
-          python-version: '3.8'
+          python-version: '3.9'
       - name: Get LabsJDK
         run: |
           wget ${{ env.LABS_LINK }}labsjdk-ce-${{ env.LABS_TAG }}-darwin-${{ matrix.ARCH }}.tar.gz -O labsjdk-ce-${{ env.LABS_TAG }}-darwin-${{ matrix.ARCH }}.tar.gz
