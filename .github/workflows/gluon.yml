@@ -43,7 +43,7 @@ jobs:
         run: |
           wget ${{ env.LABS_LINK }}labsjdk-ce-${{ env.LABS_TAG }}-darwin-aarch64.tar.gz -O labsjdk-ce-${{ env.LABS_TAG }}-darwin-aarch64.tar.gz
           tar -xf labsjdk-ce-${{ env.LABS_TAG }}-darwin-aarch64.tar.gz
-          echo "JAVA_HOME=${{ github.workspace }}/labsjdk-ce-23-jvmci-b01" >> ${GITHUB_ENV}
+          echo "JAVA_HOME=${{ github.workspace }}/labsjdk-ce-23-jvmci-b01/Contents/Home" >> ${GITHUB_ENV}
       - name: Build GraalVM
         id: darwin-build-graalvm
         run: |
