@@ -50,8 +50,8 @@ jobs:
           restore-keys: ${{ runner.os }}-mx-
       - name: Get LabsJDK
         run: |
-          wget ${{ env.LABS_LINK }}labsjdk-ce-${{ env.LABS_TAG }}-darwin-${{ env.ARCH }}.tar.gz -O labsjdk-ce-${{ env.LABS_TAG }}-darwin-${{ env.ARCH }}.tar.gz
-          tar -xf labsjdk-ce-${{ env.LABS_TAG }}-darwin-${{ env.ARCH }}.tar.gz
+          wget ${{ env.LABS_LINK }}labsjdk-ce-${{ env.LABS_TAG }}-darwin-${ARCH}.tar.gz -O labsjdk-ce-${{ env.LABS_TAG }}-darwin-${ARCH}.tar.gz
+          tar -xf labsjdk-ce-${{ env.LABS_TAG }}-darwin-${ARCH}.tar.gz
           echo "JAVA_HOME=${{ github.workspace }}/labsjdk-ce-23-jvmci-b01/Contents/Home" >> ${GITHUB_ENV}
       - name: Build GraalVM
         id: darwin-build-graalvm
@@ -74,6 +74,6 @@ jobs:
       - name: Archive distribution
         uses: actions/upload-artifact@v2
         with:
-          name: graalvm-zip-darwin-${{ env.ARCH }}
+          name: graalvm-zip-darwin-${ARCH}
           path: |
             vm/${{ env.GRAALVM_SVM }}.tar.gz
