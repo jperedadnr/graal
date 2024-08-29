@@ -21,6 +21,11 @@ jobs:
       fail-fast: false
       matrix:
         os: [macos-13, macos-latest]
+        include:
+          - env:
+              ARCH: "arm64"
+          - env:
+              ARCH: "aarch64"
     env:
       LABS_LINK: https://github.com/graalvm/labs-openjdk/releases/download/23%2B25-jvmci-b01/
       LABS_TAG: 23+25-jvmci-b01
@@ -43,12 +48,6 @@ jobs:
           path: ~/.mx
           key: ${{ runner.os }}-mx-${{ hashFiles('**/suite.py') }}
           restore-keys: ${{ runner.os }}-mx-
-      - name: Get Arch Arm64
-        if: matrix.os == 'macos-13'
-        run: echo "AARCH=arm64" >> ${GITHUB_ENV}
-      - name: Get Arch AArch64
-        if: matrix.os == 'macos-latest'
-        run: echo "AARCH=aarch64" >> ${GITHUB_ENV}
       - name: Get LabsJDK
         run: |
           wget ${{ env.LABS_LINK }}labsjdk-ce-${{ env.LABS_TAG }}-darwin-${{ env.ARCH }}.tar.gz -O labsjdk-ce-${{ env.LABS_TAG }}-darwin-${{ env.ARCH }}.tar.gz
