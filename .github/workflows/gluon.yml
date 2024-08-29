@@ -1,0 +1,68 @@
+# Builds GraalVM for Linux, Windows and macOS, with JDK 21,
+
+name: Gluon Build
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+env:
+  LANG: en_US.UTF-8
+
+jobs:
+  build-graalvm-darwin:
+    runs-on: [macos-latest]
+    env:
+      JDK: labsjdk-ce-23+25-jvmci-b01
+      LABS_HOME: ${{ github.workspace }}/jdk
+      MX_PYTHON: python3.9
+      MX_PATH: ${{ github.workspace }}/mx
+      GRAALVM_SVM: graalvm-java23-darwin-24.1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/checkout@v4
+        with:
+          repository: graalvm/mx
+          fetch-depth: 1
+          ref: master
+          path: ${{ env.MX_PATH }}
+      - uses: actions/cache@v4
+        with:
+          path: ~/.mx
+          key: ${{ runner.os }}-mx-${{ hashFiles('**/suite.py') }}
+          restore-keys: ${{ runner.os }}-mx-
+      - name: Get JDK
+        run: |
+          mkdir jdk-dl
+          ${MX_PATH}/mx --java-home= fetch-jdk --jdk-id labsjdk-ce-23+25-jvmci-b01 --to jdk-dl --alias ${JAVA_HOME}
+      - name: Build GraalVM
+        id: darwin-build-graalvm
+        run: |
+          echo "DISABLE_LIBPOLYGLOT=true" >> ${GITHUB_ENV}
+          echo "DISABLE_POLYGLOT=true" >> ${GITHUB_ENV}
+          echo "FORCE_BASH_LAUNCHERS=true" >> ${GITHUB_ENV}
+          cd substratevm
+          ${MX_PATH}/mx --dy /substratevm build
+          GRAALVM_HOME=`${MX_PATH}/mx --dy /substratevm graalvm-home`
+          echo "::set-output name=graalvm-home-dir::$GRAALVM_HOME"
+          cd ..
+      - name: Create distribution
+        working-directory: ./vm
+        run: |
+          cd ${{ steps.darwin-build-graalvm.outputs.graalvm-home-dir }}/../../..
+          mv `ls -1 | head -n1` ${{ env.GRAALVM_SVM }}
+          echo >> ${{ env.GRAALVM_SVM }}/Contents/Home/release && echo "VENDOR=Gluon" >> ${{ env.GRAALVM_SVM }}/Contents/Home/release
+          tar -czvf ${{ github.workspace }}/vm/${{ env.GRAALVM_SVM }}.tar.gz ${{ env.GRAALVM_SVM }}
+      - name: Archive distribution
+        uses: actions/upload-artifact@v2
+        with:
+          name: graalvm-zip-darwin
+          path: |
+            vm/${{ env.GRAALVM_SVM }}.tar.gz
