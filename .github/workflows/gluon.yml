@@ -18,7 +18,8 @@ jobs:
   build-graalvm-darwin:
     runs-on: [macos-latest]
     env:
-      JDK: labsjdk-ce-23+25-jvmci-b01
+      LABS_LINK: https://github.com/graalvm/labs-openjdk/releases/download/23%2B25-jvmci-b01/
+      LABS_TAG: 23+25-jvmci-b01
       LABS_HOME: ${{ github.workspace }}/jdk
       MX_PYTHON: python3.9
       MX_PATH: ${{ github.workspace }}/mx
@@ -40,8 +41,13 @@ jobs:
           restore-keys: ${{ runner.os }}-mx-
       - name: Get JDK
         run: |
-          mkdir jdk-dl
-          ${MX_PATH}/mx --java-home= fetch-jdk --jdk-id labsjdk-ce-23+25-jvmci-b01 --to jdk-dl --alias ${JAVA_HOME}
+# https://github.com/graalvm/labs-openjdk/releases/download/23%2B25-jvmci-b01/labsjdk-ce-23+25-jvmci-b01-darwin-aarch64.tar.gz
+# https://github.com/graalvm/labs-openjdk/releases/download/23%2B25-jvmci-b01/labsjdk-ce-23+25-jvmci-b01-darwin-amd64.tar.gz
+# https://github.com/graalvm/labs-openjdk/releases/download/23%2B25-jvmci-b01/labsjdk-ce-23+25-jvmci-b01-linux-amd64.tar.gz
+# https://github.com/graalvm/labs-openjdk/releases/download/23%2B25-jvmci-b01/labsjdk-ce-23+25-jvmci-b01-windows-amd64.tar.gz
+          wget ${{ env.LABS_LINK }}labsjdk-ce-${{ env.LABS_TAG }}-darwin-aarch64.tar.gz -O labsjdk-ce-${{ env.LABS_TAG }}-darwin-aarch64.tar.gz
+          tar -xf labsjdk-ce-${{ env.LABS_TAG }}-darwin-aarch64.tar.gz
+          echo "JAVA_HOME=${{ github.workspace }}/labsjdk-ce-23-jvmci-b01" >> ${GITHUB_ENV}
       - name: Build GraalVM
         id: darwin-build-graalvm
         run: |
