@@ -56,8 +56,13 @@ jobs:
           path: ~/.mx
           key: ${{ runner.os }}-mx-${{ hashFiles('**/suite.py') }}
           restore-keys: ${{ runner.os }}-mx-
-      - name: Set up Python
+      - name: Set up Python macOS
         if: matrix.os == 'macos-13'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+      - name: Set up Python Ubuntu
+        if: matrix.os == 'ubuntu-latest'
         uses: actions/setup-python@v5
         with:
           python-version: '3.9'
