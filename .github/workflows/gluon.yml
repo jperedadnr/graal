@@ -23,7 +23,7 @@ jobs:
         os: [macos-13, macos-latest]
         include:
           - os: macos-13
-            ARCH: "arm64"
+            ARCH: "amd64"
           - os: macos-latest
             ARCH: "aarch64"
     env:
