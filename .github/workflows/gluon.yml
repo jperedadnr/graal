@@ -20,12 +20,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest]
+        os: [macos-13, macos-latest, ubuntu-latest]
         include:
-          - os: windows-latest
-            ARCH: "amd64"
-            HOME: ""
-            NAME: "windows"
           - os: ubuntu-latest
             ARCH: "amd64"
             HOME: ""
@@ -45,6 +41,9 @@ jobs:
       MX_PYTHON: python3.9
       MX_PATH: ${{ github.workspace }}/mx
       GRAALVM_SVM: graalvm-java23-${{ matrix.NAME }}-24.1
+      DYNAMIC_IMPORTS: "/substratevm"
+      DISABLE_POLYGLOT: true
+      DISABLE_LIBPOLYGLOT: true
     steps:
       - uses: actions/checkout@v4
         with:
@@ -66,37 +65,77 @@ jobs:
         with:
           python-version: '3.9'
       - name: Get LabsJDK
-        if: matrix.os != 'windows-latest'
         run: |
           wget ${{ env.LABS_LINK }}labsjdk-ce-${{ env.LABS_TAG }}-${{ matrix.NAME }}-${{ matrix.ARCH }}.tar.gz -O labsjdk-ce-${{ env.LABS_TAG }}-${{ matrix.NAME }}-${{ matrix.ARCH }}.tar.gz
           tar -xf labsjdk-ce-${{ env.LABS_TAG }}-${{ matrix.NAME }}-${{ matrix.ARCH }}.tar.gz
           echo "JAVA_HOME=${{ github.workspace }}/labsjdk-ce-23-jvmci-b01${{ matrix.HOME }}" >> ${GITHUB_ENV}
-      - name: Get LabsJDK (windows)
-        if: matrix.os == 'windows-latest'
-        run: |
-          Invoke-WebRequest ${{ env.LABS_LINK }}labsjdk-ce-${{ env.LABS_TAG }}-${{ matrix.NAME }}-${{ matrix.ARCH }}.tar.gz -OutFile labsjdk-ce-${{ env.LABS_TAG }}-${{ matrix.NAME }}-${{ matrix.ARCH }}.tar.gz
-          tar -xf .\labsjdk-ce-${{ env.LABS_TAG }}-${{ matrix.NAME }}-${{ matrix.ARCH }}.tar.gz
-          echo "JAVA_HOME=${{ github.workspace }}/labsjdk-ce-23-jvmci-b01${{ matrix.HOME }}" >> ${GITHUB_ENV}
       - name: Build GraalVM
-        if: matrix.os != 'windows-latest'
         id: build-graalvm
         run: |
-          echo "DISABLE_LIBPOLYGLOT=true" >> ${GITHUB_ENV}
-          echo "DISABLE_POLYGLOT=true" >> ${GITHUB_ENV}
-          echo "FORCE_BASH_LAUNCHERS=true" >> ${GITHUB_ENV}
           cd substratevm
           ${MX_PATH}/mx --dy /substratevm build
           GRAALVM_HOME=`${MX_PATH}/mx --dy /substratevm graalvm-home`
           echo "::set-output name=graalvm-home-dir::$GRAALVM_HOME"
           cd ..
+      - name: Create distribution
+        working-directory: ./vm
+        run: |
+          cd ${{ steps.build-graalvm.outputs.graalvm-home-dir }}/../../..
+          mv `ls -1 | head -n1` ${{ env.GRAALVM_SVM }}
+          echo >> ${{ env.GRAALVM_SVM }}${{ matrix.HOME }}/release && echo "VENDOR=Gluon" >> ${{ env.GRAALVM_SVM }}${{ matrix.HOME }}/release
+          tar -czvf ${{ github.workspace }}/vm/${{ env.GRAALVM_SVM }}.tar.gz ${{ env.GRAALVM_SVM }}
+      - name: Archive distribution
+        uses: actions/upload-artifact@v2
+        with:
+          name: graalvm-zip-${{ matrix.NAME }}-${{ matrix.ARCH }}
+          path: |
+            vm/${{ env.GRAALVM_SVM }}.tar.gz
+
+  build-graalvm-gluon-windows:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest]
+        include:
+          - os: windows-latest
+            ARCH: "amd64"
+            HOME: ""
+            NAME: "windows"
+    env:
+      LABS_LINK: https://github.com/graalvm/labs-openjdk/releases/download/23%2B25-jvmci-b01/
+      LABS_TAG: 23+25-jvmci-b01
+      LABS_HOME: ${{ github.workspace }}/jdk
+      MX_PYTHON: python3.9
+      MX_PATH: ${{ github.workspace }}/mx
+      GRAALVM_SVM: graalvm-java23-${{ matrix.NAME }}-24.1
+      DYNAMIC_IMPORTS: "/substratevm"
+      DISABLE_POLYGLOT: true
+      DISABLE_LIBPOLYGLOT: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/checkout@v4
+        with:
+          repository: graalvm/mx
+          fetch-depth: 1
+          ref: master
+          path: ${{ env.MX_PATH }}
+      - uses: actions/cache@v4
+        with:
+          path: ~/.mx
+          key: ${{ runner.os }}-mx-${{ hashFiles('**/suite.py') }}
+          restore-keys: ${{ runner.os }}-mx-
+      - name: Get LabsJDK (windows)
+        run: |
+          Invoke-WebRequest ${{ env.LABS_LINK }}labsjdk-ce-${{ env.LABS_TAG }}-${{ matrix.NAME }}-${{ matrix.ARCH }}.tar.gz -OutFile labsjdk-ce-${{ env.LABS_TAG }}-${{ matrix.NAME }}-${{ matrix.ARCH }}.tar.gz
+          tar -xf .\labsjdk-ce-${{ env.LABS_TAG }}-${{ matrix.NAME }}-${{ matrix.ARCH }}.tar.gz
+          echo "JAVA_HOME=${{ github.workspace }}/labsjdk-ce-23-jvmci-b01${{ matrix.HOME }}" >> ${GITHUB_ENV}
       - name: Build GraalVM (windows)
-        if: matrix.os == 'windows-latest'
-        id: build-graalvm
+        id: build-graalvm-windows
         shell: cmd
         run: |
-          echo "DISABLE_LIBPOLYGLOT=true" >> %GITHUB_ENV%
-          echo "DISABLE_POLYGLOT=true" >> %GITHUB_ENV%
-          echo "FORCE_BASH_LAUNCHERS=true" >> %GITHUB_ENV%
           cd substratevm
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64
           call ${{ env.MX_PATH }}\mx.cmd -p substratevm --dy "/substratevm" build
@@ -110,10 +149,9 @@ jobs:
       - name: Create distribution
         working-directory: ./vm
         run: |
-          cd ${{ steps.build-graalvm.outputs.graalvm-home-dir }}/../../..
-          mv `ls -1 | head -n1` ${{ env.GRAALVM_SVM }}
-          echo >> ${{ env.GRAALVM_SVM }}${{ matrix.HOME }}/release && echo "VENDOR=Gluon" >> ${{ env.GRAALVM_SVM }}${{ matrix.HOME }}/release
-          tar -czvf ${{ github.workspace }}/vm/${{ env.GRAALVM_SVM }}.tar.gz ${{ env.GRAALVM_SVM }}
+          move ${{ steps.build-graalvm-windows.outputs.graalvm-home-dir }} ${{ env.GRAALVM_SVM }}
+          echo '' >> ${{ env.GRAALVM_SVM }}${{ matrix.HOME }}/release && echo VENDOR=Gluon >> ${{ env.GRAALVM_SVM }}${{ matrix.HOME }}/release
+          Compress-Archive -Path ${{ env.GRAALVM_SVM }} -DestinationPath ${{ env.GRAALVM_SVM }}.zip
       - name: Archive distribution
         uses: actions/upload-artifact@v2
         with:
