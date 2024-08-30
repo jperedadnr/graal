@@ -80,7 +80,11 @@ jobs:
       - name: Create distribution
         working-directory: ./vm
         run: |
-          cd ${{ steps.build-graalvm.outputs.graalvm-home-dir }}/../../..
+          cd ${{ steps.build-graalvm.outputs.graalvm-home-dir }}/..
+          if [[ ${{ matrix.os }} != 'ubuntu-latest' ]]
+          then
+            cd ../..
+          fi
           mv `ls -1 | head -n1` ${{ env.GRAALVM_SVM }}
           echo >> ${{ env.GRAALVM_SVM }}/release && echo "VENDOR=Gluon" >> ${{ env.GRAALVM_SVM }}/release
           tar -czvf ${{ github.workspace }}/vm/${{ env.GRAALVM_SVM }}.tar.gz ${{ env.GRAALVM_SVM }}
