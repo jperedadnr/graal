@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-13, macos-latest, ubuntu-latest, windows-latest]
+        os: [windows-latest]
         include:
           - os: windows-latest
             ARCH: "amd64"
@@ -74,7 +74,7 @@ jobs:
       - name: Get LabsJDK (windows)
         if: matrix.os == 'windows-latest'
         run: |
-          Invoque-WebRequest ${{ env.LABS_LINK }}labsjdk-ce-${{ env.LABS_TAG }}-${{ matrix.NAME }}-${{ matrix.ARCH }}.tar.gz -OutFile labsjdk-ce-${{ env.LABS_TAG }}-${{ matrix.NAME }}-${{ matrix.ARCH }}.tar.gz
+          Invoke-WebRequest ${{ env.LABS_LINK }}labsjdk-ce-${{ env.LABS_TAG }}-${{ matrix.NAME }}-${{ matrix.ARCH }}.tar.gz -OutFile labsjdk-ce-${{ env.LABS_TAG }}-${{ matrix.NAME }}-${{ matrix.ARCH }}.tar.gz
           tar -xf .\labsjdk-ce-${{ env.LABS_TAG }}-${{ matrix.NAME }}-${{ matrix.ARCH }}.tar.gz
           echo "JAVA_HOME=${{ github.workspace }}/labsjdk-ce-23-jvmci-b01${{ matrix.HOME }}" >> ${GITHUB_ENV}
       - name: Build GraalVM
