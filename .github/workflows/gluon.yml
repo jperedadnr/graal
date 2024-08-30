@@ -139,16 +139,18 @@ jobs:
         shell: cmd
         run: |
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64
-          call ${{ env.MX_PATH }}\mx.cmd -p substratevm --dy "/substratevm" build
+          call ${{ env.MX_PATH }}\mx.cmd -p substratevm build
           call ${{ env.MX_PATH }}\mx.cmd -p substratevm graalvm-home > graalvm-home-with-forward-slashes.txt
-          ${MX_PATH}/mx --dy /substratevm build
           set /p GRAALVM_HOME=<graalvm-home-with-forward-slashes.txt
           setlocal enabledelayedexpansion
           set "GRAALVM_HOME=%GRAALVM_HOME:/=\%"
           echo "::set-output name=graalvm-home-dir::%GRAALVM_HOME%"
+          echo GRAALVM_HOME=%GRAALVM_HOME% >> %GITHUB_ENV%
       - name: Create distribution
         working-directory: ./vm
         run: |
+          echo "GH1: ${{ env.GRAALVM_HOME}}"
+          echo "GH2: ${{ steps.build-graalvm-windows.outputs.graalvm-home-dir }}"
           move ${{ steps.build-graalvm-windows.outputs.graalvm-home-dir }} ${{ env.GRAALVM_SVM }}
           echo '' >> ${{ env.GRAALVM_SVM }}${{ matrix.HOME }}/release && echo VENDOR=Gluon >> ${{ env.GRAALVM_SVM }}${{ matrix.HOME }}/release
           Compress-Archive -Path ${{ env.GRAALVM_SVM }} -DestinationPath ${{ env.GRAALVM_SVM }}.zip
