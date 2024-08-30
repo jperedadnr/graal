@@ -66,9 +66,16 @@ jobs:
         with:
           python-version: '3.9'
       - name: Get LabsJDK
+        if: matrix.os != 'windows'
         run: |
           wget ${{ env.LABS_LINK }}labsjdk-ce-${{ env.LABS_TAG }}-${{ matrix.NAME }}-${{ matrix.ARCH }}.tar.gz -O labsjdk-ce-${{ env.LABS_TAG }}-${{ matrix.NAME }}-${{ matrix.ARCH }}.tar.gz
           tar -xf labsjdk-ce-${{ env.LABS_TAG }}-${{ matrix.NAME }}-${{ matrix.ARCH }}.tar.gz
+          echo "JAVA_HOME=${{ github.workspace }}/labsjdk-ce-23-jvmci-b01${{ matrix.HOME }}" >> ${GITHUB_ENV}
+      - name: Get LabsJDK (windows)
+        if: matrix.os == 'windows'
+        run: |
+          Invoque-WebRequest ${{ env.LABS_LINK }}labsjdk-ce-${{ env.LABS_TAG }}-${{ matrix.NAME }}-${{ matrix.ARCH }}.tar.gz -OutFile labsjdk-ce-${{ env.LABS_TAG }}-${{ matrix.NAME }}-${{ matrix.ARCH }}.tar.gz
+          tar -xf .\labsjdk-ce-${{ env.LABS_TAG }}-${{ matrix.NAME }}-${{ matrix.ARCH }}.tar.gz
           echo "JAVA_HOME=${{ github.workspace }}/labsjdk-ce-23-jvmci-b01${{ matrix.HOME }}" >> ${GITHUB_ENV}
       - name: Build GraalVM
         id: build-graalvm
