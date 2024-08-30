@@ -16,6 +16,7 @@ env:
 
 jobs:
   build-graalvm-gluon:
+    if: false
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -136,7 +137,6 @@ jobs:
         id: build-graalvm-windows
         shell: cmd
         run: |
-          cd substratevm
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64
           call ${{ env.MX_PATH }}\mx.cmd -p substratevm --dy "/substratevm" build
           call ${{ env.MX_PATH }}\mx.cmd -p substratevm graalvm-home > graalvm-home-with-forward-slashes.txt
@@ -145,7 +145,6 @@ jobs:
           setlocal enabledelayedexpansion
           set "GRAALVM_HOME=%GRAALVM_HOME:/=\%"
           echo "::set-output name=graalvm-home-dir::%GRAALVM_HOME%"
-          cd ..
       - name: Create distribution
         working-directory: ./vm
         run: |
