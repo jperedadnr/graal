@@ -133,7 +133,6 @@ jobs:
           Invoke-WebRequest ${{ env.LABS_LINK }}labsjdk-ce-${{ env.LABS_TAG }}-${{ matrix.NAME }}-${{ matrix.ARCH }}.tar.gz -OutFile labsjdk-ce-${{ env.LABS_TAG }}-${{ matrix.NAME }}-${{ matrix.ARCH }}.tar.gz
           tar -xf .\labsjdk-ce-${{ env.LABS_TAG }}-${{ matrix.NAME }}-${{ matrix.ARCH }}.tar.gz
       - name: Build GraalVM (windows)
-        id: build-graalvm-windows
         env:
           JAVA_HOME: ${{ github.workspace }}/labsjdk-ce-23-jvmci-b01${{ matrix.HOME }}
         shell: cmd
@@ -149,9 +148,7 @@ jobs:
       - name: Create distribution
         working-directory: ./vm
         run: |
-          echo "GH1: ${{ env.GRAALVM_HOME}}"
-          echo "GH2: ${{ steps.build-graalvm-windows.outputs.graalvm-home-dir }}"
-          move ${{ steps.build-graalvm-windows.outputs.graalvm-home-dir }} ${{ env.GRAALVM_SVM }}
+          move ${{ env.GRAALVM_HOME}} ${{ env.GRAALVM_SVM }}
           echo '' >> ${{ env.GRAALVM_SVM }}${{ matrix.HOME }}/release && echo VENDOR=Gluon >> ${{ env.GRAALVM_SVM }}${{ matrix.HOME }}/release
           Compress-Archive -Path ${{ env.GRAALVM_SVM }} -DestinationPath ${{ env.GRAALVM_SVM }}.zip
       - name: Archive distribution
