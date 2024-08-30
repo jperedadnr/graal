@@ -83,7 +83,7 @@ jobs:
         run: |
           cd ${{ steps.build-graalvm.outputs.graalvm-home-dir }}/../../..
           mv `ls -1 | head -n1` ${{ env.GRAALVM_SVM }}
-          echo >> ${{ env.GRAALVM_SVM }}${{ matrix.HOME }}/release && echo "VENDOR=Gluon" >> ${{ env.GRAALVM_SVM }}${{ matrix.HOME }}/release
+          echo >> ${{ env.GRAALVM_SVM }}/release && echo "VENDOR=Gluon" >> ${{ env.GRAALVM_SVM }}/release
           tar -czvf ${{ github.workspace }}/vm/${{ env.GRAALVM_SVM }}.tar.gz ${{ env.GRAALVM_SVM }}
       - name: Archive distribution
         uses: actions/upload-artifact@v2
@@ -149,11 +149,11 @@ jobs:
         working-directory: ./vm
         run: |
           move ${{ env.GRAALVM_HOME}} ${{ env.GRAALVM_SVM }}
-          echo '' >> ${{ env.GRAALVM_SVM }}${{ matrix.HOME }}/release && echo VENDOR=Gluon >> ${{ env.GRAALVM_SVM }}${{ matrix.HOME }}/release
+          echo '' >> ${{ env.GRAALVM_SVM }}/release && echo VENDOR=Gluon >> ${{ env.GRAALVM_SVM }}/release
           Compress-Archive -Path ${{ env.GRAALVM_SVM }} -DestinationPath ${{ env.GRAALVM_SVM }}.zip
       - name: Archive distribution
         uses: actions/upload-artifact@v2
         with:
           name: graalvm-zip-${{ matrix.NAME }}-${{ matrix.ARCH }}
           path: |
-            vm/${{ env.GRAALVM_SVM }}.tar.gz
+            vm/${{ env.GRAALVM_SVM }}.zip
