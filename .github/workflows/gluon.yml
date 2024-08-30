@@ -1,4 +1,4 @@
-# Builds GraalVM for Linux, Windows and macOS, with JDK 21,
+# Builds GraalVM 24-ea for Linux (x86_64), Windows (x86_64) and macOS (amd64/aarch64), with JDK 21,
 
 name: Gluon Build
 
@@ -16,7 +16,6 @@ env:
 
 jobs:
   build-graalvm-gluon:
-    if: false
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
