@@ -49,7 +49,7 @@ jobs:
       LABS_HOME: ${{ github.workspace }}/jdk
       MX_PYTHON: python3.9
       MX_PATH: ${{ github.workspace }}/mx
-      GRAALVM_SVM: graalvm-java23-${{ matrix.NAME }}-${{ needs.determine-version.outputs.version }}
+      GRAALVM_SVM: graalvm-java23-${{ matrix.NAME }}-${{ matrix.ARCH }}-${{ needs.determine-version.outputs.version }}
       DYNAMIC_IMPORTS: "/substratevm"
       DISABLE_POLYGLOT: true
       DISABLE_LIBPOLYGLOT: true
@@ -123,7 +123,7 @@ jobs:
       LABS_HOME: ${{ github.workspace }}/jdk
       MX_PYTHON: 'python'
       MX_PATH: ${{ github.workspace }}/mx
-      GRAALVM_SVM: graalvm-java23-${{ matrix.NAME }}-${{ needs.determine-version.outputs.version }}
+      GRAALVM_SVM: graalvm-java23-${{ matrix.NAME }}-${{ matrix.ARCH }}-${{ needs.determine-version.outputs.version }}
       DYNAMIC_IMPORTS: "/substratevm"
       DISABLE_POLYGLOT: true
       DISABLE_LIBPOLYGLOT: true
@@ -204,6 +204,10 @@ jobs:
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
+          name: GraalVM CE ${{ steps.create-release-name.outputs.releaseName }}
+          body: |
+            This is a Gluon build of GraalVM.
+            Based on Gluon Graal commit: ${{ github.sha }}
           files: |
             ./dist/vm/*.zip
             ./dist/vm/*.tar.gz
