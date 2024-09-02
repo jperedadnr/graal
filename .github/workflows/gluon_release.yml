@@ -98,7 +98,7 @@ jobs:
           echo >> ${{ env.GRAALVM_SVM }}/release && echo "VENDOR=Gluon" >> ${{ env.GRAALVM_SVM }}/release
           tar -czvf ${{ github.workspace }}/vm/${{ env.GRAALVM_SVM }}.tar.gz ${{ env.GRAALVM_SVM }}
       - name: Archive distribution
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: graalvm-zip-${{ matrix.NAME }}-${{ matrix.ARCH }}
           path: |
@@ -166,7 +166,7 @@ jobs:
           echo '' >> ${{ env.GRAALVM_SVM }}/release && echo VENDOR=Gluon >> ${{ env.GRAALVM_SVM }}/release
           Compress-Archive -Path ${{ env.GRAALVM_SVM }} -DestinationPath ${{ env.GRAALVM_SVM }}.zip
       - name: Archive distribution
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: graalvm-zip-${{ matrix.NAME }}-${{ matrix.ARCH }}
           path: |
@@ -185,34 +185,25 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: graalvm-zip-linux-amd64
-          path: ./dist/graalvm-linux-amd64/graalvm
+          path: ./dist/vm
       - uses: actions/download-artifact@v4
         with:
           name: graalvm-zip-darwin-amd64
-          path: ./dist/graalvm-darwin-amd64/graalvm
+          path: ./dist/vm
       - uses: actions/download-artifact@v4
         with:
           name: graalvm-zip-darwin-aarch64
-          path: ./dist/graalvm-darwin-aarch64/graalvm
+          path: ./dist/vm
       - uses: actions/download-artifact@v4
         with:
           name: graalvm-zip-windows-amd64
-          path: ./dist/graalvm-windows-amd64/graalvm
-      - name: Zip downloaded artifacts
+          path: ./dist/vm
+      - name: Check files
         run: |
-          cd $GITHUB_WORKSPACE/dist/graalvm-linux-amd64/
-          zip -r ../graalvm-linux-amd64.zip graalvm/      
-          cd $GITHUB_WORKSPACE/dist/graalvm-darwin-amd64/
-          zip -r ../graalvm-darwin-amd64.zip graalvm/      
-          cd $GITHUB_WORKSPACE/dist/graalvm-darwin-aarch64/
-          zip -r ../graalvm-darwin-aarch64.zip graalvm/      
-          cd $GITHUB_WORKSPACE/dist/graalvm-windows-amd64/
-          zip -r ../graalvm-windows-amd64.zip graalvm/
-      - name: Check zip files
-        run: |
-          ls -R ./dist/
+          ls -R ./dist/vm
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            ./dist/*.zip
+            ./dist/vm/*.zip
+            ./dist/vm/*.tar.gz
