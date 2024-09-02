@@ -4,18 +4,27 @@ name: Gluon Build
 
 on:
   push:
-    branches:
-      - 'master'
-  pull_request:
-    branches:
-      - 'master'
-  workflow_dispatch:
+    tags:
+      - '*'
 
 env:
   LANG: en_US.UTF-8
 
 jobs:
+  determine-version:
+    runs-on: ubuntu-latest
+    outputs:
+      simpleTag: ${{ steps.fetchSimpleTag.outputs.tag }}
+      version: ${{ steps.fetchVersion.outputs.version }}
+    steps:
+      - id: fetchSimpleTag
+        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+      - id: fetchVersion
+        run: echo ::set-output name=version::$(echo $GITHUB_REF | sed -E "s/.*(gluon-.*-(dev|Final)).*/\1/g")
+
   build-graalvm-gluon:
+    needs:
+      - determine-version
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -40,7 +49,7 @@ jobs:
       LABS_HOME: ${{ github.workspace }}/jdk
       MX_PYTHON: python3.9
       MX_PATH: ${{ github.workspace }}/mx
-      GRAALVM_SVM: graalvm-java23-${{ matrix.NAME }}-24.1
+      GRAALVM_SVM: graalvm-java23-${{ matrix.NAME }}-${{ needs.determine-version.outputs.version }}
       DYNAMIC_IMPORTS: "/substratevm"
       DISABLE_POLYGLOT: true
       DISABLE_LIBPOLYGLOT: true
@@ -96,6 +105,8 @@ jobs:
             vm/${{ env.GRAALVM_SVM }}.tar.gz
 
   build-graalvm-gluon-windows:
+    needs:
+      - determine-version
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -112,7 +123,7 @@ jobs:
       LABS_HOME: ${{ github.workspace }}/jdk
       MX_PYTHON: 'python'
       MX_PATH: ${{ github.workspace }}/mx
-      GRAALVM_SVM: graalvm-java23-${{ matrix.NAME }}-24.1
+      GRAALVM_SVM: graalvm-java23-${{ matrix.NAME }}-${{ needs.determine-version.outputs.version }}
       DYNAMIC_IMPORTS: "/substratevm"
       DISABLE_POLYGLOT: true
       DISABLE_LIBPOLYGLOT: true
@@ -160,3 +171,29 @@ jobs:
           name: graalvm-zip-${{ matrix.NAME }}-${{ matrix.ARCH }}
           path: |
             vm/${{ env.GRAALVM_SVM }}.zip
+
+  create-release:
+    runs-on: ubuntu-latest
+    needs:
+      - determine-version
+      - build-graalvm-gluon
+      - build-graalvm-gluon-windows
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Create release name
+        id: create-release-name
+        run: echo ::set-output name=releaseName::$(echo ${{ needs.determine-version.outputs.simpleTag }} | sed "s/gluon-/Gluon /g")
+      - name: Create release
+        uses: ncipollo/release-action@v1
+        with:
+          name: GraalVM CE ${{ steps.create-release-name.outputs.releaseName }}
+          body: |
+            This is a Gluon build of GraalVM.
+            Based on Gluon Graal commit: ${{ github.sha }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          artifacts: "artifacts/graalvm-zip-linux-amd64/*.tar.gz,artifacts/graalvm-zip-darwin-amd64/*.tar.gz,artifacts/graalvm-zip-darwin-aarch64/*.tar.gz,artifacts/graalvm-zip-windows-amd64/*.zip"
