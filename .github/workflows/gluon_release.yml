@@ -201,6 +201,9 @@ jobs:
       - name: Check files
         run: |
           ls -R ./dist/vm
+      - name: Create release name
+        id: create-release-name
+        run: echo ::set-output name=releaseName::$(echo ${{ needs.determine-version.outputs.simpleTag }} | sed "s/gluon-/Gluon /g")
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
