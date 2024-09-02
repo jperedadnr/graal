@@ -184,16 +184,35 @@ jobs:
           fetch-depth: 1
       - uses: actions/download-artifact@v4
         with:
-          path: artifacts
-      - name: Create release name
-        id: create-release-name
-        run: echo ::set-output name=releaseName::$(echo ${{ needs.determine-version.outputs.simpleTag }} | sed "s/gluon-/Gluon /g")
-      - name: Create release
-        uses: ncipollo/release-action@v1
+          name: graalvm-zip-linux-amd64
+          path: ./dist/graalvm-linux-amd64/graalvm
+      - uses: actions/download-artifact@v4
         with:
-          name: GraalVM CE ${{ steps.create-release-name.outputs.releaseName }}
-          body: |
-            This is a Gluon build of GraalVM.
-            Based on Gluon Graal commit: ${{ github.sha }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-          artifacts: "artifacts/graalvm-zip-linux-amd64/*.tar.gz,artifacts/graalvm-zip-darwin-amd64/*.tar.gz,artifacts/graalvm-zip-darwin-aarch64/*.tar.gz,artifacts/graalvm-zip-windows-amd64/*.zip"
+          name: graalvm-zip-darwin-amd64
+          path: ./dist/graalvm-darwin-amd64/graalvm
+      - uses: actions/download-artifact@v4
+        with:
+          name: graalvm-zip-darwin-aarch64
+          path: ./dist/graalvm-darwin-aarch64/graalvm
+      - uses: actions/download-artifact@v4
+        with:
+          name: graalvm-zip-windows-amd64
+          path: ./dist/graalvm-windows-amd64/graalvm
+      - name: Zip downloaded artifacts
+        run: |
+          cd $GITHUB_WORKSPACE/dist/graalvm-linux-amd64/
+          zip -r ../graalvm-linux-amd64.zip graalvm/      
+          cd $GITHUB_WORKSPACE/dist/graalvm-darwin-amd64/
+          zip -r ../graalvm-darwin-amd64.zip graalvm/      
+          cd $GITHUB_WORKSPACE/dist/graalvm-darwin-aarch64/
+          zip -r ../graalvm-darwin-aarch64.zip graalvm/      
+          cd $GITHUB_WORKSPACE/dist/graalvm-windows-amd64/
+          zip -r ../graalvm-windows-amd64.zip graalvm/
+      - name: Check zip files
+        run: |
+          ls -R ./dist/
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ./dist/*.zip
