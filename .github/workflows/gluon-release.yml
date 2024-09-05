@@ -95,7 +95,7 @@ jobs:
             cd ../..
           fi
           mv `ls -1 | head -n1` ${{ env.GRAALVM_SVM }}
-          echo >> ${{ env.GRAALVM_SVM }}/release && echo "VENDOR=Gluon" >> ${{ env.GRAALVM_SVM }}/release
+          echo >> ${{ env.GRAALVM_SVM }}${{ matrix.HOME }}/release && echo "VENDOR=Gluon" >> ${{ env.GRAALVM_SVM }}${{ matrix.HOME }}/release
           tar -czvf ${{ github.workspace }}/vm/${{ env.GRAALVM_SVM }}.tar.gz ${{ env.GRAALVM_SVM }}
       - name: Archive distribution
         uses: actions/upload-artifact@v4
