@@ -5,10 +5,10 @@ name: Gluon Build
 on:
   push:
     branches:
-      - 'master'
+      - '*'
   pull_request:
     branches:
-      - 'master'
+      - '*'
   workflow_dispatch:
 
 env:
@@ -73,7 +73,7 @@ jobs:
         id: build-graalvm
         run: |
           cd substratevm
-          ${MX_PATH}/mx --dy /substratevm build
+          ${MX_PATH}/mx --dy /substratevm --native-images=lib:native-image-agent build
           GRAALVM_HOME=`${MX_PATH}/mx --dy /substratevm graalvm-home`
           echo "::set-output name=graalvm-home-dir::$GRAALVM_HOME"
           cd ..
