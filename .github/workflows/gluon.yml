@@ -44,6 +44,7 @@ jobs:
       DYNAMIC_IMPORTS: "/substratevm"
       DISABLE_POLYGLOT: true
       DISABLE_LIBPOLYGLOT: true
+      JVMCI_VERSION_CHECK: ignore
     steps:
       - uses: actions/checkout@v4
         with:
