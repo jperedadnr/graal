@@ -73,7 +73,6 @@ jobs:
         id: build-graalvm
         run: |
           cd substratevm
-          ${MX_PATH}/mx clean
           ${MX_PATH}/mx --dy /substratevm --native-images=lib:native-image-agent build
           echo "GRAALVM_HOME=`${MX_PATH}/mx --dy /substratevm --native-images=lib:native-image-agent graalvm-home`" >> ${GITHUB_ENV}
           cd ..
@@ -127,6 +126,7 @@ jobs:
           ref: master
           path: ${{ env.MX_PATH }}
       - uses: actions/cache@v4
+        if: false
         with:
           path: ~/.mx
           key: ${{ runner.os }}-mx-${{ hashFiles('**/suite.py') }}
