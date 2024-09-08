@@ -145,6 +145,7 @@ jobs:
           set /p GRAALVM_HOME=<graalvm-home-with-forward-slashes.txt
           setlocal enabledelayedexpansion
           set "GRAALVM_HOME=%GRAALVM_HOME:/=\%"
+          echo "::set-output name=graalvm-home-dir::%GRAALVM_HOME%"
           echo GRAALVM_HOME=%GRAALVM_HOME% >> %GITHUB_ENV%
       - name: Create distribution
         working-directory: ./vm
