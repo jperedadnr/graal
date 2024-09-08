@@ -87,7 +87,7 @@ jobs:
       - name: Create distribution
         working-directory: ./vm
         run: |
-          cd ${{ steps.build-graalvm.outputs.graalvm-home-dir }}/..
+          cd ${{ env.GRAALVM_HOME}}/..
           if [[ ${{ matrix.os }} != 'ubuntu-latest' ]]
           then
             cd ../..
