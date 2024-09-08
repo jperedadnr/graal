@@ -5,10 +5,10 @@ name: Gluon Build
 on:
   push:
     branches:
-      - 'master'
+      - 'gluon24'
   pull_request:
     branches:
-      - 'master'
+      - 'gluon24'
   workflow_dispatch:
 
 env:
@@ -40,7 +40,7 @@ jobs:
       LABS_HOME: ${{ github.workspace }}/jdk
       MX_PYTHON: python3.9
       MX_PATH: ${{ github.workspace }}/mx
-      GRAALVM_SVM: graalvm-java23-${{ matrix.NAME }}-24.1
+      GRAALVM_SVM: graalvm-java23-${{ matrix.NAME }}-23+25.1
       DYNAMIC_IMPORTS: "/substratevm"
       DISABLE_POLYGLOT: true
       DISABLE_LIBPOLYGLOT: true
@@ -70,17 +70,15 @@ jobs:
           tar -xf labsjdk-ce-${{ env.LABS_TAG }}-${{ matrix.NAME }}-${{ matrix.ARCH }}.tar.gz
           echo "JAVA_HOME=${{ github.workspace }}/labsjdk-ce-23-jvmci-b01${{ matrix.HOME }}" >> ${GITHUB_ENV}
       - name: Build GraalVM
-        id: build-graalvm
         run: |
           cd substratevm
-          ${MX_PATH}/mx --dy /substratevm build
-          GRAALVM_HOME=`${MX_PATH}/mx --dy /substratevm graalvm-home`
-          echo "::set-output name=graalvm-home-dir::$GRAALVM_HOME"
+          ${MX_PATH}/mx --dy /substratevm --native-images=lib:native-image-agent build
+          echo "GRAALVM_HOME=`${MX_PATH}/mx --native-images=lib:native-image-agent graalvm-home`" >> ${GITHUB_ENV}
           cd ..
       - name: Create distribution
         working-directory: ./vm
         run: |
-          cd ${{ steps.build-graalvm.outputs.graalvm-home-dir }}/..
+          cd ${{ env.GRAALVM_HOME }}/..
           if [[ ${{ matrix.os }} != 'ubuntu-latest' ]]
           then
             cd ../..
@@ -112,7 +110,7 @@ jobs:
       LABS_HOME: ${{ github.workspace }}/jdk
       MX_PYTHON: 'python'
       MX_PATH: ${{ github.workspace }}/mx
-      GRAALVM_SVM: graalvm-java23-${{ matrix.NAME }}-24.1
+      GRAALVM_SVM: graalvm-java23-${{ matrix.NAME }}-23+25.1
       DYNAMIC_IMPORTS: "/substratevm"
       DISABLE_POLYGLOT: true
       DISABLE_LIBPOLYGLOT: true
@@ -141,8 +139,8 @@ jobs:
         shell: cmd
         run: |
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64
-          call ${{ env.MX_PATH }}\mx.cmd -p substratevm build
-          call ${{ env.MX_PATH }}\mx.cmd -p substratevm graalvm-home > graalvm-home-with-forward-slashes.txt
+          call ${{ env.MX_PATH }}\mx.cmd -p substratevm --dy /substratevm --native-images=lib:native-image-agent build
+          call ${{ env.MX_PATH }}\mx.cmd -p substratevm --native-images=lib:native-image-agent graalvm-home > graalvm-home-with-forward-slashes.txt
           set /p GRAALVM_HOME=<graalvm-home-with-forward-slashes.txt
           setlocal enabledelayedexpansion
           set "GRAALVM_HOME=%GRAALVM_HOME:/=\%"
