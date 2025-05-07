@@ -14,7 +14,7 @@ env:
 
 jobs:
   determine-version:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     outputs:
       simpleTag: ${{ steps.fetchSimpleTag.outputs.tag }}
       version: ${{ steps.fetchVersion.outputs.version }}
@@ -25,9 +25,9 @@ jobs:
       run: echo ::set-output name=version::$(echo $GITHUB_REF | sed -E "s/.*(gluon-.*-(dev|Final)).*/\1/g")
 
   build-labsjdk-static:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       with:
         repository: graalvm/labs-openjdk-17.git
         fetch-depth: 1
@@ -57,10 +57,11 @@ jobs:
         retention-days: 1
 
   build-graalvm-linux:
+    if: ${{ false }}
     needs:
       - determine-version
       - build-labsjdk-static
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         jdk: [11, 17]
@@ -71,10 +72,10 @@ jobs:
       MX_PATH: ${{ github.workspace }}/mx
       GRAALVM_SVM: graalvm-svm-java${{ matrix.jdk }}-linux-${{ needs.determine-version.outputs.version }}
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 1
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       with:
         repository: graalvm/mx.git
         fetch-depth: 1
@@ -89,7 +90,7 @@ jobs:
         path: ~/.mx
         key: ${{ runner.os }}-mx-${{ hashFiles('**/suite.py') }}
         restore-keys: ${{ runner.os }}-mx-
-    - uses: actions/setup-java@v2
+    - uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
         java-version: ${{ matrix.jdk }}
@@ -141,7 +142,7 @@ jobs:
   build-graalvm-darwin:
     needs:
       - determine-version
-    runs-on: macos-10.15
+    runs-on: macos-13
     strategy:
       matrix:
         jdk: [11, 17]
@@ -152,10 +153,10 @@ jobs:
       MX_PATH: ${{ github.workspace }}/mx
       GRAALVM_SVM: graalvm-svm-java${{ matrix.jdk }}-darwin-${{ needs.determine-version.outputs.version }}
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 1
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       with:
         repository: graalvm/mx.git
         fetch-depth: 1
@@ -170,7 +171,7 @@ jobs:
         path: ~/.mx
         key: ${{ runner.os }}-mx-${{ hashFiles('**/suite.py') }}
         restore-keys: ${{ runner.os }}-mx-
-    - uses: actions/setup-java@v2
+    - uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
         java-version: ${{ matrix.jdk }}
@@ -206,7 +207,82 @@ jobs:
         path: |
           vm/${{ env.GRAALVM_SVM }}.tar.gz
 
+  build-graalvm-darwin-m1:
+    needs:
+      - determine-version
+    runs-on: macos-14
+    defaults:
+      run:
+        shell: "/usr/bin/arch -arch arm64e /bin/bash -l {0}"
+    strategy:
+      matrix:
+        jdk: [11, 17]
+    env:
+      JDK: labsjdk-ce-${{ matrix.jdk }}
+      LABS_HOME: ${{ github.workspace }}/jdk
+      MX_PYTHON: python3.9
+      MX_PATH: ${{ github.workspace }}/mx
+      GRAALVM_SVM: graalvm-svm-java${{ matrix.jdk }}-darwin-m1-${{ needs.determine-version.outputs.version }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 1
+    - uses: actions/checkout@v4
+      with:
+        repository: graalvm/mx.git
+        fetch-depth: 1
+        ref: master
+        path: ${{ env.MX_PATH }}
+    - uses: actions/cache@v1
+      with:
+        path: ~/.mx
+        key: ${{ runner.os }}-mx-${{ hashFiles('**/suite.py') }}
+        restore-keys: ${{ runner.os }}-mx-
+    - uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        architecture: 'aarch64'
+        java-version: ${{ matrix.jdk }}
+    - name: Get JDK
+      run: |
+        mkdir jdk-dl
+        ${MX_PATH}/mx fetch-jdk --java-distribution ${JDK} --to jdk-dl --alias ${LABS_HOME}
+    - name: Build GraalVM
+      id: darwin-build-graalvm
+      env:
+        JAVA_HOME: ${{ env.LABS_HOME }}/Contents/Home
+        DISABLE_LIBPOLYGLOT: true
+        DISABLE_POLYGLOT: true
+        FORCE_BASH_LAUNCHERS: false
+      working-directory: ./vm
+      run: |
+        unset JAVA_HOME
+        export JAVA_HOME=${{ env.LABS_HOME }}/Contents/Home
+        export DISABLE_LIBPOLYGLOT=true
+        export DISABLE_POLYGLOT=true
+        export FORCE_BASH_LAUNCHERS=false
+        echo ${JAVA_HOME}
+        ${JAVA_HOME}/bin/java -version
+        echo >> GRAALVM-README.md && echo "TODO: use actual content" >> GRAALVM-README.md
+        ${MX_PATH}/mx --dy /substratevm build
+        GRAALVM_HOME=`${MX_PATH}/mx --dy /substratevm graalvm-home`
+        echo "::set-output name=graalvm-home-dir::$GRAALVM_HOME"
+    - name: Create distribution
+      working-directory: ./vm
+      run: |
+        cd ${{ steps.darwin-build-graalvm.outputs.graalvm-home-dir }}/../../..
+        mv `ls -1 | head -n1` ${{ env.GRAALVM_SVM }}
+        echo >> ${{ env.GRAALVM_SVM }}/Contents/Home/release && echo "VENDOR=Gluon" >> ${{ env.GRAALVM_SVM }}/Contents/Home/release
+        tar -czvf ${{ github.workspace }}/vm/${{ env.GRAALVM_SVM }}.tar.gz ${{ env.GRAALVM_SVM }}
+    - name: Archive distribution
+      uses: actions/upload-artifact@v2
+      with:
+        name: graalvm-zip-darwin-m1
+        path: |
+          vm/${{ env.GRAALVM_SVM }}.tar.gz
+
   build-graalvm-windows:
+    if: ${{ false }}
     needs:
       - determine-version
     runs-on: windows-2019
@@ -219,10 +295,10 @@ jobs:
       MX_PATH: ${{ github.workspace }}\mx
       GRAALVM_SVM: graalvm-svm-java${{ matrix.jdk }}-windows-${{ needs.determine-version.outputs.version }}
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 1
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       with:
         repository: graalvm/mx.git
         fetch-depth: 1
@@ -237,7 +313,7 @@ jobs:
         path: ~/.mx
         key: ${{ runner.os }}-mx-${{ hashFiles('**/suite.py') }}
         restore-keys: ${{ runner.os }}-mx-
-    - uses: actions/setup-java@v2
+    - uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
         java-version: ${{ matrix.jdk }}
@@ -278,14 +354,15 @@ jobs:
           vm/${{ env.GRAALVM_SVM }}.zip
 
   create-release:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs:
       - determine-version
-      - build-graalvm-linux
+#     - build-graalvm-linux
       - build-graalvm-darwin
-      - build-graalvm-windows
+      - build-graalvm-darwin-m1
+#      - build-graalvm-windows
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 1
     - uses: actions/download-artifact@v2
