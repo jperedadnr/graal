@@ -50,7 +50,7 @@ jobs:
         zip -r labsjdk-17-static-libs-linux.zip labsjdk-ce-17-${{ env.JVMCI_VERSION }}-static-libs
         
     - name: Upload zip
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: labsjdk-17-static-libs-linux.zip
         path: labsjdk-17-static-libs-linux.zip
@@ -133,7 +133,7 @@ jobs:
         tar -czvf ${{ github.workspace }}/vm/${{ env.GRAALVM_SVM }}.tar.gz ${{ env.GRAALVM_SVM }}
 
     - name: Archive distribution
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: graalvm-zip-linux
         path: |
@@ -201,7 +201,7 @@ jobs:
         echo >> ${{ env.GRAALVM_SVM }}/Contents/Home/release && echo "VENDOR=Gluon" >> ${{ env.GRAALVM_SVM }}/Contents/Home/release
         tar -czvf ${{ github.workspace }}/vm/${{ env.GRAALVM_SVM }}.tar.gz ${{ env.GRAALVM_SVM }}
     - name: Archive distribution
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: graalvm-zip-darwin
         path: |
@@ -275,7 +275,7 @@ jobs:
         echo >> ${{ env.GRAALVM_SVM }}/Contents/Home/release && echo "VENDOR=Gluon" >> ${{ env.GRAALVM_SVM }}/Contents/Home/release
         tar -czvf ${{ github.workspace }}/vm/${{ env.GRAALVM_SVM }}.tar.gz ${{ env.GRAALVM_SVM }}
     - name: Archive distribution
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: graalvm-zip-darwin-m1
         path: |
@@ -347,7 +347,7 @@ jobs:
         echo '' >> ${{ env.GRAALVM_SVM }}/release && echo VENDOR=Gluon >> ${{ env.GRAALVM_SVM }}/release
         Compress-Archive -Path ${{ env.GRAALVM_SVM }} -DestinationPath ${{ env.GRAALVM_SVM }}.zip
     - name: Archive distribution
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: graalvm-zip-windows
         path: |
