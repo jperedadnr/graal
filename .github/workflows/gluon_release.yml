@@ -82,7 +82,7 @@ jobs:
         ref: master
         path: ${{ env.MX_PATH }}
     - name: Setup python
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v5
       with:
         python-version: '3.9'
     - uses: actions/cache@v4
@@ -163,7 +163,7 @@ jobs:
         ref: master
         path: ${{ env.MX_PATH }}
     - name: Setup python
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v5
       with:
         python-version: '3.9'
     - uses: actions/cache@v4
@@ -211,9 +211,6 @@ jobs:
     needs:
       - determine-version
     runs-on: macos-14
-    defaults:
-      run:
-        shell: "/usr/bin/arch -arch arm64e /bin/bash -l {0}"
     strategy:
       matrix:
         jdk: [11, 17]
@@ -305,7 +302,7 @@ jobs:
         ref: master
         path: ${{ env.MX_PATH }}
     - name: Setup python
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v5
       with:
         python-version: '3.9'
     - uses: actions/cache@v4
