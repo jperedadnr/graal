@@ -232,8 +232,8 @@ jobs:
         path: ${{ env.MX_PATH }}
     - name: Set up Python
       uses: actions/setup-python@v5
-        with:
-          python-version: '3.9'
+      with:
+        python-version: '3.9'
     - uses: actions/cache@v4
       with:
         path: ~/.mx
