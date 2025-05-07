@@ -203,7 +203,7 @@ jobs:
     - name: Archive distribution
       uses: actions/upload-artifact@v4
       with:
-        name: graalvm-zip-darwin
+        name: graalvm-svm-java${{ matrix.jdk }}-zip-darwin
         path: |
           vm/${{ env.GRAALVM_SVM }}.tar.gz
 
@@ -230,6 +230,11 @@ jobs:
         fetch-depth: 1
         ref: master
         path: ${{ env.MX_PATH }}
+    - name: Set up Python
+        if: matrix.os == 'macos-13' || matrix.os == 'ubuntu-latest'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
     - uses: actions/cache@v4
       with:
         path: ~/.mx
@@ -274,7 +279,7 @@ jobs:
     - name: Archive distribution
       uses: actions/upload-artifact@v4
       with:
-        name: graalvm-zip-darwin-m1
+        name: graalvm-svm-java${{ matrix.jdk }}-zip-darwin-m1
         path: |
           vm/${{ env.GRAALVM_SVM }}.tar.gz
 
