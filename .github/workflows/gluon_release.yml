@@ -363,21 +363,38 @@ jobs:
       - build-graalvm-darwin-m1
 #      - build-graalvm-windows
     steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 1
-    - uses: actions/download-artifact@v2
-      with:
-        path: artifacts
-    - name: Create release name
-      id: create-release-name
-      run: echo ::set-output name=releaseName::$(echo ${{ needs.determine-version.outputs.simpleTag }} | sed "s/gluon-/Gluon /g")
-    - name: Create release
-      uses: ncipollo/release-action@v1
-      with:
-        name: GraalVM CE ${{ steps.create-release-name.outputs.releaseName }}
-        body: |
-          This is a Gluon build of GraalVM.
-          Based on Gluon Graal commit: ${{ github.sha }}
-        token: ${{ secrets.GITHUB_TOKEN }}
-        artifacts: "artifacts/graalvm-zip-linux/*.tar.gz,artifacts/graalvm-zip-darwin/*.tar.gz,artifacts/graalvm-zip-windows/*.zip"
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/download-artifact@v4
+        with:
+          name: graalvm-svm-java11-zip-darwin
+          path: ./dist/vm
+      - uses: actions/download-artifact@v4
+        with:
+          name: graalvm-svm-java17-zip-darwin
+          path: ./dist/vm
+      - uses: actions/download-artifact@v4
+        with:
+          name: graalvm-svm-java11-zip-darwin-m1
+          path: ./dist/vm
+      - uses: actions/download-artifact@v4
+        with:
+          name: graalvm-svm-java17-zip-darwin-m1
+          path: ./dist/vm
+      - name: Check files
+        run: |
+          ls -R ./dist/vm
+      - name: Create release name
+        id: create-release-name
+        run: echo ::set-output name=releaseName::$(echo ${{ needs.determine-version.outputs.simpleTag }} | sed "s/gluon-/Gluon /g")
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: GraalVM CE ${{ steps.create-release-name.outputs.releaseName }}
+          body: |
+            This is a Gluon build of GraalVM.
+            Based on Gluon Graal commit: ${{ github.sha }}
+          files: |
+            ./dist/vm/*.zip
+            ./dist/vm/*.tar.gz
